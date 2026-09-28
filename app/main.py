@@ -1082,6 +1082,8 @@ async def get_document_pages(
 # EXPORT
 # =========================================================
 
+from app.export_service import generate_export
+
 @app.get(
     "/documents/{document_id}/export"
 )
@@ -1095,7 +1097,6 @@ async def export_document(
     )
 
     if not doc:
-
         raise HTTPException(
             status_code=404,
             detail="Document not found"
@@ -1103,50 +1104,17 @@ async def export_document(
 
     from fastapi.responses import Response
 
-    if format == "json":
-
-        content = json.dumps(
-            doc,
-            ensure_ascii=False,
-            indent=2
-        )
-
-        return Response(
-
-            content=content,
-
-            media_type="application/json",
-
-            headers={
-                "Content-Disposition":
-                    "attachment; "
-                    f"filename="
-                    f"{doc.get('filename', 'export')}"
-                    ".json"
-            }
-
-        )
-
-    content = json.dumps(
-        doc,
-        ensure_ascii=False,
-        indent=2
-    )
+    content, media_type, ext = generate_export(doc, format)
+    clean_base = doc.get("filename", "export")
+    if clean_base.lower().endswith(".pdf"):
+        clean_base = clean_base[:-4]
 
     return Response(
-
         content=content,
-
-        media_type="application/json",
-
+        media_type=media_type,
         headers={
-            "Content-Disposition":
-                "attachment; "
-                f"filename="
-                f"{doc.get('filename', 'export')}"
-                ".json"
+            "Content-Disposition": f'attachment; filename="{clean_base}.{ext}"'
         }
-
     )
 
 
