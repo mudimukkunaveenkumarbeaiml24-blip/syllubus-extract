@@ -1,5 +1,5 @@
 # =========================================================
-# SYLLABUSIQ - GLM-5.3 UNIVERSAL EXTRACTION PROMPTS
+# SYLLABUSIQ - UNIVERSAL SYLLABUS EXTRACTION PROMPTS
 # =========================================================
 
 
