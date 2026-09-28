@@ -1,0 +1,1919 @@
+<!doctype html>
+<html lang="en" data-t="light">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>SYLLABUSIQ — Universal Syllabus Intelligence</title>
+    <style>
+        :root {
+            --bg: #f6f7f9;
+            --card: #fff;
+            --fg: #0f172a;
+            --mut: #64748b;
+            --bd: #e4e7ec;
+            --hov: #f1f3f7;
+            --pri: #3949c9;
+            --pris: #eceefd;
+            --ok: #15803d;
+            --oks: #e7f5ec;
+            --wn: #a15c07;
+            --wns: #fdf1dc;
+            --er: #b42318;
+            --ers: #fdeceb;
+            --in: #0b6aa2;
+            --ins: #e5f2fa;
+            --sh: 0 1px 2px rgba(16, 24, 40, .05);
+            --mono: ui-monospace, "Cascadia Code", "Segoe UI Mono", Menlo, Consolas, monospace;
+        }
+
+        [data-t=dark] {
+            --bg: #0d1017;
+            --card: #151a23;
+            --fg: #e6e9ef;
+            --mut: #8b95a7;
+            --bd: #262d3a;
+            --hov: #1c2230;
+            --pri: #8b97ff;
+            --pris: #1f2547;
+            --ok: #4ade80;
+            --oks: #12281b;
+            --wn: #fbbf24;
+            --wns: #2c2210;
+            --er: #f87171;
+            --ers: #2d1614;
+            --in: #5cc0f5;
+            --ins: #0f2531;
+            --sh: none
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0
+        }
+
+        body {
+            font: 14px/1.5 Inter, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            -webkit-font-smoothing: antialiased
+        }
+
+        button,
+        input,
+        select,
+        textarea {
+            font: inherit;
+            color: inherit
+        }
+
+        button {
+            cursor: pointer
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--pri);
+            outline-offset: 2px;
+            border-radius: 6px
+        }
+
+        .i {
+            flex: none
+        }
+
+        h1 {
+            font-size: 24px;
+            letter-spacing: -.02em;
+            font-weight: 650
+        }
+
+        h2 {
+            font-size: 15px;
+            font-weight: 600
+        }
+
+        h3 {
+            font-size: 14px;
+            font-weight: 600
+        }
+
+        .app {
+            display: grid;
+            grid-template-columns: var(--sw) 1fr;
+            height: 100vh;
+            --sw: 248px;
+            transition: grid-template-columns .2s
+        }
+
+        .app.col {
+            --sw: 66px
+        }
+
+        aside {
+            background: var(--card);
+            border-right: 1px solid var(--bd);
+            display: flex;
+            flex-direction: column;
+            padding: 14px 10px;
+            gap: 2px;
+            overflow: auto;
+            z-index: 30
+        }
+
+        .logo {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 4px 8px 14px
+        }
+
+        .logo b {
+            display: grid;
+            place-items: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            background: var(--pri);
+            color: #fff;
+            font-size: 13px
+        }
+
+        .logo strong {
+            font-size: 14px;
+            letter-spacing: .06em
+        }
+
+        .logo small {
+            display: block;
+            color: var(--mut);
+            font-size: 11px
+        }
+
+        .nl {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 8px 10px;
+            border-radius: 9px;
+            color: var(--mut);
+            font-weight: 500;
+            border: 0;
+            background: none;
+            width: 100%;
+            text-align: left;
+            transition: .15s
+        }
+
+        .nl:hover {
+            background: var(--hov);
+            color: var(--fg)
+        }
+
+        .nl.on {
+            background: var(--pris);
+            color: var(--pri)
+        }
+
+        .nl[disabled] {
+            opacity: .5;
+            cursor: not-allowed
+        }
+
+        .sec {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--mut);
+            padding: 14px 10px 4px
+        }
+
+        .col .lbl,
+        .col .sec,
+        .col .logo div,
+        .col .usr div {
+            display: none
+        }
+
+        .col .nl {
+            justify-content: center
+        }
+
+        .usr {
+            margin-top: auto;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 10px 8px;
+            border-top: 1px solid var(--bd)
+        }
+
+        .av {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--pris);
+            color: var(--pri);
+            display: grid;
+            place-items: center;
+            font-weight: 600;
+            flex: none
+        }
+
+        .main {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            height: 100vh
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 24px;
+            border-bottom: 1px solid var(--bd);
+            background: color-mix(in srgb, var(--card) 85%, transparent);
+            backdrop-filter: blur(10px)
+        }
+
+        .crumb {
+            color: var(--mut);
+            font-size: 13px;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .crumb b {
+            color: var(--fg);
+            font-weight: 500
+        }
+
+        .sb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--bd);
+            border-radius: 9px;
+            padding: 0 10px;
+            background: var(--card);
+            height: 34px;
+            width: 230px
+        }
+
+        .sb input {
+            border: 0;
+            background: none;
+            outline: 0;
+            width: 100%
+        }
+
+        .ib {
+            display: grid;
+            place-items: center;
+            width: 34px;
+            height: 34px;
+            border: 1px solid var(--bd);
+            background: var(--card);
+            border-radius: 9px;
+            color: var(--mut)
+        }
+
+        .ib:hover {
+            background: var(--hov);
+            color: var(--fg)
+        }
+
+        #view {
+            flex: 1;
+            overflow: auto;
+            padding: 24px;
+            animation: fi .25s
+        }
+
+        @keyframes fi {
+            from {
+                opacity: 0;
+                transform: translateY(4px)
+            }
+        }
+
+        .wrap {
+            max-width: 1280px;
+            margin: 0 auto
+        }
+
+        .ph {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: flex-end;
+            margin-bottom: 20px;
+            flex-wrap: wrap
+        }
+
+        .ph p {
+            color: var(--mut);
+            margin-top: 4px;
+            max-width: 640px
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap
+        }
+
+        .sp {
+            flex: 1
+        }
+
+        .mut {
+            color: var(--mut)
+        }
+
+        .mono {
+            font-family: var(--mono);
+            font-size: 12.5px
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--bd);
+            border-radius: 14px;
+            box-shadow: var(--sh);
+            padding: 18px
+        }
+
+        .card>h2 {
+            margin-bottom: 12px
+        }
+
+        .g {
+            display: grid;
+            gap: 16px
+        }
+
+        .g4 {
+            grid-template-columns: repeat(4, 1fr)
+        }
+
+        .g2 {
+            grid-template-columns: 2fr 1fr
+        }
+
+        .btn {
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+            height: 36px;
+            padding: 0 14px;
+            border-radius: 9px;
+            border: 1px solid var(--bd);
+            background: var(--card);
+            font-weight: 500;
+            transition: .15s;
+            white-space: nowrap
+        }
+
+        .btn:hover {
+            background: var(--hov)
+        }
+
+        .btn:active {
+            transform: scale(.97)
+        }
+
+        .btn.pri {
+            background: var(--pri);
+            border-color: var(--pri);
+            color: #fff
+        }
+
+        [data-t=dark] .btn.pri {
+            color: #0d1017
+        }
+
+        .btn.pri:hover {
+            filter: brightness(1.08)
+        }
+
+        .btn.gh {
+            border-color: transparent;
+            background: none
+        }
+
+        .btn.gh:hover {
+            background: var(--hov)
+        }
+
+        .btn.sm {
+            height: 28px;
+            padding: 0 9px;
+            font-size: 12.5px
+        }
+
+        .btn[disabled] {
+            opacity: .5;
+            pointer-events: none
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 9px;
+            border-radius: 99px;
+            font-size: 12px;
+            font-weight: 500;
+            background: var(--hov);
+            color: var(--mut);
+            white-space: nowrap
+        }
+
+        .badge.ok {
+            background: var(--oks);
+            color: var(--ok)
+        }
+
+        .badge.wn {
+            background: var(--wns);
+            color: var(--wn)
+        }
+
+        .badge.er {
+            background: var(--ers);
+            color: var(--er)
+        }
+
+        .badge.in {
+            background: var(--ins);
+            color: var(--in)
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--mut)
+        }
+
+        .dot.ok {
+            background: var(--ok)
+        }
+
+        .dot.er {
+            background: var(--er)
+        }
+
+        .dot.wn {
+            background: var(--wn)
+        }
+
+        .kpi {
+            display: flex;
+            flex-direction: column;
+            gap: 4px
+        }
+
+        .kpi .n {
+            font-size: 30px;
+            font-weight: 650;
+            letter-spacing: -.03em;
+            line-height: 1.1
+        }
+
+        .kpi .t {
+            display: flex;
+            justify-content: space-between;
+            color: var(--mut);
+            font-size: 13px
+        }
+
+        .tw {
+            overflow: auto;
+            border: 1px solid var(--bd);
+            border-radius: 12px
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse
+        }
+
+        th {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--mut);
+            text-align: left;
+            padding: 10px 14px;
+            background: var(--hov);
+            white-space: nowrap
+        }
+
+        td {
+            padding: 11px 14px;
+            border-top: 1px solid var(--bd)
+        }
+
+        tr:hover td {
+            background: var(--hov)
+        }
+
+        td.c,
+        th.c {
+            text-align: center
+        }
+
+        .tabs {
+            display: flex;
+            gap: 2px;
+            border-bottom: 1px solid var(--bd);
+            margin-bottom: 16px;
+            overflow: auto
+        }
+
+        .tabs button {
+            border: 0;
+            background: none;
+            padding: 9px 13px;
+            color: var(--mut);
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap
+        }
+
+        .tabs button:hover {
+            color: var(--fg)
+        }
+
+        .tabs button[aria-selected=true] {
+            color: var(--pri);
+            border-color: var(--pri)
+        }
+
+        input[type=text],
+        input[type=number],
+        select,
+        textarea {
+            border: 1px solid var(--bd);
+            background: var(--card);
+            border-radius: 9px;
+            height: 36px;
+            padding: 0 10px;
+            min-width: 0
+        }
+
+        textarea {
+            height: 90px;
+            padding: 8px 10px;
+            width: 100%
+        }
+
+        .drop {
+            border: 1.5px dashed var(--bd);
+            border-radius: 16px;
+            padding: 44px 20px;
+            text-align: center;
+            background: var(--card);
+            transition: .2s
+        }
+
+        .drop.ov,
+        .drop:hover {
+            border-color: var(--pri);
+            background: var(--pris)
+        }
+
+        .drop .ic {
+            display: inline-grid;
+            place-items: center;
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            background: var(--pris);
+            color: var(--pri);
+            margin-bottom: 12px
+        }
+
+        .bar {
+            height: 6px;
+            border-radius: 9px;
+            background: var(--hov);
+            overflow: hidden
+        }
+
+        .bar i {
+            display: block;
+            height: 100%;
+            background: var(--pri);
+            transition: width .4s
+        }
+
+        .opts {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px
+        }
+
+        .opt {
+            display: block;
+            border: 1px solid var(--bd);
+            border-radius: 12px;
+            padding: 14px;
+            cursor: pointer;
+            transition: .15s
+        }
+
+        .opt:hover {
+            background: var(--hov)
+        }
+
+        .opt:has(input:checked) {
+            border-color: var(--pri);
+            background: var(--pris)
+        }
+
+        .opt input {
+            accent-color: var(--pri);
+            margin-right: 6px
+        }
+
+        .opt small {
+            display: block;
+            color: var(--mut);
+            margin-top: 4px
+        }
+
+        .chk {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 8px 16px
+        }
+
+        .chk label,
+        .tg {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        input[type=checkbox] {
+            accent-color: var(--pri);
+            width: 16px;
+            height: 16px
+        }
+
+        .note {
+            display: flex;
+            gap: 12px;
+            border: 1px solid var(--bd);
+            border-left: 3px solid var(--in);
+            background: var(--ins);
+            border-radius: 12px;
+            padding: 14px 16px
+        }
+
+        .note ul {
+            margin: 6px 0 0 18px;
+            color: var(--mut)
+        }
+
+        details {
+            border: 1px solid var(--bd);
+            border-radius: 11px;
+            background: var(--card);
+            margin-bottom: 8px
+        }
+
+        summary {
+            padding: 11px 14px;
+            cursor: pointer;
+            font-weight: 500;
+            list-style: none;
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        summary::-webkit-details-marker {
+            display: none
+        }
+
+        details[open]>summary .cv {
+            transform: rotate(90deg)
+        }
+
+        .cv {
+            transition: .15s
+        }
+
+        .db {
+            padding: 4px 14px 14px
+        }
+
+        .adv {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px
+        }
+
+        .adv label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 12.5px;
+            color: var(--mut)
+        }
+
+        .steps {
+            display: flex;
+            flex-direction: column
+        }
+
+        .step {
+            display: flex;
+            gap: 12px;
+            padding: 10px 0;
+            position: relative
+        }
+
+        .step .m {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: var(--hov);
+            color: var(--mut);
+            flex: none;
+            font-size: 12px;
+            z-index: 1
+        }
+
+        .step.done .m {
+            background: var(--oks);
+            color: var(--ok)
+        }
+
+        .step.run .m {
+            background: var(--pris);
+            color: var(--pri);
+            animation: pl 1.4s infinite
+        }
+
+        .step.warn .m {
+            background: var(--wns);
+            color: var(--wn)
+        }
+
+        .step.fail .m {
+            background: var(--ers);
+            color: var(--er)
+        }
+
+        .step:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            left: 12.5px;
+            top: 36px;
+            bottom: -6px;
+            width: 1px;
+            background: var(--bd)
+        }
+
+        @keyframes pl {
+            50% {
+                box-shadow: 0 0 0 6px transparent;
+                opacity: .7
+            }
+        }
+
+        .skel {
+            border-radius: 8px;
+            background: linear-gradient(90deg, var(--hov) 25%, var(--bd) 50%, var(--hov) 75%);
+            background-size: 200% 100%;
+            animation: sk 1.2s infinite;
+            height: 16px
+        }
+
+        @keyframes sk {
+            to {
+                background-position: -200% 0
+            }
+        }
+
+        .empty {
+            text-align: center;
+            padding: 56px 20px
+        }
+
+        .empty .ic {
+            display: inline-grid;
+            place-items: center;
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: var(--hov);
+            color: var(--mut);
+            margin-bottom: 12px
+        }
+
+        .empty p {
+            color: var(--mut);
+            margin: 4px 0 16px
+        }
+
+        .eb {
+            display: flex;
+            gap: 14px;
+            border-color: color-mix(in srgb, var(--er) 40%, var(--bd))
+        }
+
+        .eb>.i {
+            color: var(--er);
+            margin-top: 2px
+        }
+
+        .eb p {
+            margin: 4px 0;
+            color: var(--mut)
+        }
+
+        .eb .row {
+            margin-top: 10px
+        }
+
+        .doc {
+            display: grid;
+            grid-template-columns: 150px minmax(0, 1fr) 420px;
+            gap: 14px;
+            height: calc(100vh - 150px);
+            min-height: 480px
+        }
+
+        .doc>.card {
+            padding: 0;
+            overflow: auto;
+            display: flex;
+            flex-direction: column
+        }
+
+        .pn {
+            padding: 14px;
+            overflow: auto;
+            flex: 1
+        }
+
+        .pdf {
+            background: var(--hov);
+            flex: 1;
+            overflow: auto;
+            padding: 16px;
+            text-align: center
+        }
+
+        .pdf canvas {
+            background: #fff;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, .15);
+            max-width: none
+        }
+
+        .tb {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--bd);
+            flex-wrap: wrap
+        }
+
+        .th {
+            display: block;
+            width: 100%;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            background: none;
+            padding: 2px;
+            margin-bottom: 8px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--mut)
+        }
+
+        .th.on {
+            border-color: var(--pri);
+            background: var(--pris);
+            color: var(--pri)
+        }
+
+        .th canvas {
+            width: 100%;
+            display: block;
+            background: #fff;
+            border-radius: 4px;
+            min-height: 60px
+        }
+
+        .fld {
+            display: grid;
+            grid-template-columns: 110px 1fr auto;
+            gap: 8px;
+            padding: 9px 0;
+            border-top: 1px solid var(--bd);
+            align-items: center
+        }
+
+        .fld:first-child {
+            border: 0
+        }
+
+        .val {
+            font-weight: 500;
+            word-break: break-word
+        }
+
+        .src {
+            font-family: var(--mono);
+            font-size: 12px;
+            background: var(--hov);
+            padding: 8px 10px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            color: var(--fg);
+            margin-top: 6px
+        }
+
+        mark {
+            background: color-mix(in srgb, var(--wn) 35%, transparent);
+            color: inherit;
+            border-radius: 3px
+        }
+
+        .mx td,
+        .mx th {
+            text-align: center;
+            padding: 8px 10px
+        }
+
+        .mx td button {
+            width: 32px;
+            height: 28px;
+            border: 1px solid var(--bd);
+            background: var(--card);
+            border-radius: 7px;
+            font-family: var(--mono)
+        }
+
+        .mx td button.z {
+            color: var(--mut);
+            opacity: .5
+        }
+
+        .mx td button.on {
+            background: var(--pri);
+            color: #fff
+        }
+
+        .pg {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px
+        }
+
+        .pc {
+            border: 1px solid var(--bd);
+            border-radius: 12px;
+            background: var(--card);
+            padding: 8px;
+            text-align: left;
+            transition: .15s
+        }
+
+        .pc:hover {
+            border-color: var(--pri);
+            transform: translateY(-1px)
+        }
+
+        .pc canvas {
+            width: 100%;
+            display: block;
+            background: #fff;
+            border-radius: 6px;
+            min-height: 90px;
+            border: 1px solid var(--bd)
+        }
+
+        .tr {
+            padding: 10px 0;
+            border-top: 1px solid var(--bd)
+        }
+
+        .tr:first-child {
+            border: 0
+        }
+
+        #toasts {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 99
+        }
+
+        .toast {
+            background: var(--fg);
+            color: var(--bg);
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            animation: fi .25s;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, .2)
+        }
+
+        .toast.er {
+            background: var(--er);
+            color: #fff
+        }
+
+        .md {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 14, 25, .5);
+            z-index: 60;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            animation: fi .15s
+        }
+
+        .mb {
+            background: var(--card);
+            border-radius: 16px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: auto;
+            padding: 20px;
+            border: 1px solid var(--bd)
+        }
+
+        .dev {
+            background: var(--wns);
+            color: var(--wn);
+            text-align: center;
+            padding: 5px;
+            font-size: 12.5px;
+            font-weight: 500
+        }
+
+        .bn {
+            display: none
+        }
+
+        .ev2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px
+        }
+
+        @media(max-width:1200px) {
+            .doc {
+                grid-template-columns: 130px minmax(0, 1fr);
+                height: auto
+            }
+
+            .doc>.card:last-child {
+                grid-column: 1/-1;
+                min-height: 420px
+            }
+
+            .doc>.card {
+                max-height: 80vh
+            }
+
+            .g4 {
+                grid-template-columns: repeat(2, 1fr)
+            }
+
+            .g2 {
+                grid-template-columns: 1fr
+            }
+        }
+
+        @media(max-width:860px) {
+            .app {
+                grid-template-columns: 1fr
+            }
+
+            aside {
+                position: fixed;
+                inset: 0 auto 0 0;
+                width: 250px;
+                transform: translateX(-100%);
+                transition: .2s
+            }
+
+            .app.open aside {
+                transform: none;
+                box-shadow: 0 0 40px rgba(0, 0, 0, .3)
+            }
+
+            .app.col .lbl,
+            .app.col .sec,
+            .app.col .logo div,
+            .app.col .usr div {
+                display: revert
+            }
+
+            .opts,
+            .ev2 {
+                grid-template-columns: 1fr
+            }
+
+            .doc {
+                grid-template-columns: 1fr
+            }
+
+            .sb {
+                display: none
+            }
+
+            header {
+                padding: 10px 14px
+            }
+
+            #view {
+                padding: 14px
+            }
+
+            .bn {
+                display: inline-grid
+            }
+
+            .pdf {
+                min-height: 360px
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            * {
+                animation: none !important;
+                transition: none !important
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app" id="app">
+        <aside id="side" aria-label="Primary"></aside>
+        <div class="main">
+            <div id="devb"></div>
+            <header>
+                <button class="ib bn" data-a="menu" aria-label="Open navigation"><svg width="16" height="16"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M3 6h18M3 12h18M3 18h18" />
+                    </svg></button>
+                <nav class="crumb" id="crumb" aria-label="Breadcrumb"></nav>
+                <form class="sb" id="gs" role="search"><span class="mut" id="gsi"></span><input id="gq" type="text"
+                        placeholder="Search documents…  ( / )" aria-label="Search documents"></form>
+                <button class="ib" data-a="bell" aria-label="Notifications" title="Notifications" id="bell"></button>
+                <button class="badge" id="apip" data-a="goapi" title="Backend status"></button>
+                <button class="ib" data-a="theme" aria-label="Toggle theme" title="Toggle theme" id="thm"></button>
+                <button class="ib" data-a="user" aria-label="User menu" title="User menu"><span class="av"
+                        style="width:26px;height:26px;font-size:12px">U</span></button>
+            </header>
+            <main id="view" tabindex="-1"></main>
+        </div>
+    </div>
+    <div id="toasts" aria-live="polite"></div>
+    <div id="modal"></div>
+    <script>
+        /* =====================================================================
+         SYLLABUSIQ frontend — vanilla HTML/CSS/JS, no build step.
+         Sections: 1 icons/utils · 2 API layer (client/extraction/documents/courses)
+         · 3 dev mock (OFF by default) · 4 validation · 5 views · 6 router.
+         Backend contract (FastAPI): see API below. Response shapes follow the
+         problem statement (Task 1 course list / Task 2 course object).
+        ===================================================================== */
+        const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const ls = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch { return d } }, sv = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+        const IC = { dash: '<rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>', file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/>', up: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>', down: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>', book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5V22h16"/>', shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>', search: '<circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/>', bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/>', moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/>', sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>', x: '<path d="M18 6L6 18M6 6l12 12"/>', chev: '<path d="M9 18l6-6-6-6"/>', eye: '<path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', help: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>', act: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>', ok: '<circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/>', warn: '<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/>', pnl: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/>', zi: '<circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3M8 11h6M11 8v6"/>', zo: '<circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3M8 11h6"/>', full: '<path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/>', lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>', db: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>', cpu: '<rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"/>', grid: '<path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/>', chk: '<path d="M20 6L9 17l-5-5"/>', pen: '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>' };
+        const I = (n, s = 16) => `<svg class="i" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n] || ''}</svg>`;
+        const toast = (m, t = '') => { const e = document.createElement('div'); e.className = 'toast ' + t; e.innerHTML = (t == 'er' ? I('warn') : I('chk')) + esc(m); $('#toasts').append(e); setTimeout(() => e.remove(), 4200) };
+        const modal = h => { $('#modal').innerHTML = h ? `<div class="md" data-a="mclose"><div class="mb" role="dialog" aria-modal="true">${h}</div></div>` : '' };
+        const fmt = n => n == null ? '—' : Number(n).toLocaleString(); const ago = d => d ? new Date(d).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+        const ST = { processing: ['in', 'Processing'], completed: ['ok', 'Completed'], needs_review: ['wn', 'Needs Review'], failed: ['er', 'Failed'] };
+        const sb = s => { const [c, l] = ST[s] || ['', 'Unknown']; return `<span class="badge ${c}"><span class="dot ${c}"></span>${l}</span>` };
+
+        /* ---------- 2. API LAYER (split into api/client.ts, extraction.ts, documents.ts, courses.ts when porting) ---------- */
+        const CFG = {
+            get api() {
+                try {
+                    if (localStorage.siqApi && localStorage.siqApi !== 'http://localhost:8000') return localStorage.siqApi;
+                } catch (e) {}
+                if (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin !== 'null') {
+                    return window.location.origin;
+                }
+                return 'http://127.0.0.1:8000';
+            },
+            get mock() {
+                try {
+                    return localStorage.siqMock === '1' || (typeof window !== 'undefined' && window.location && /[?&]mock=1/.test(window.location.search));
+                } catch (e) {
+                    return false;
+                }
+            }
+        };
+        async function req(path, o = {}) {
+            const t = performance.now();
+            if (CFG.mock) return { ok: true, data: MOCK(path, o), ms: 8 };
+            try {
+                const r = await fetch(CFG.api + path, { ...o, signal: AbortSignal.timeout(o.timeout || 120000) }), ms = Math.round(performance.now() - t);
+                if (!r.ok) {
+                    let errText = await r.text().catch(() => '');
+                    try {
+                        const j = JSON.parse(errText);
+                        if (j.message) errText = j.message;
+                        else if (j.detail) errText = j.detail;
+                    } catch(e){}
+                    const cleanMsg = r.status === 429 ? 'NVIDIA API rate limit reached. Please wait and retry.' : ('HTTP ' + r.status + ' ' + errText);
+                    return { ok: false, status: r.status, ms, err: cleanMsg.slice(0, 400) };
+                }
+                return { ok: true, ms, data: (r.headers.get('content-type') || '').includes('json') ? await r.json() : await r.blob() }
+            } catch (e) { return { ok: false, offline: e.name !== 'TimeoutError', timeout: e.name === 'TimeoutError', err: e.message || String(e) } }
+        }
+        const API = {
+            health: () => req('/health'),
+            documents: () => req('/documents'),                 // → [{id,filename,college,pages,course_count,fields,needs_review,status,uploaded_at}]
+            document: id => req('/documents/' + id),              // → summary + courses[{code,title,page,category,credits,semester}] + details{[code||title]: Task-2 object}
+            status: id => req(`/documents/${id}/status`),       // → {status,stage(0-8 completed),page,total_pages,courses,fields,needs_review,error}
+            pages: id => req(`/documents/${id}/pages`),         // → [{page,type,fields,text?}]
+            exportDoc: (id, q) => req(`/documents/${id}/export?` + new URLSearchParams(q), { timeout: 300000 }),
+            extractCourse(docId, course, file, force = false) {
+                const f = new FormData();
+                if (docId) f.append('document_id', docId);
+                if (course) f.append('course', course);
+                if (file) f.append('file', file);
+                if (force) f.append('force', '1');
+                return req('/extract/course', { method: 'POST', body: f, timeout: 300000 });
+            },
+            extractAllCourses(docId) {
+                const f = new FormData();
+                if (docId) f.append('document_id', docId);
+                return req('/extract/courses/all', { method: 'POST', body: f, timeout: 600000 });
+            },
+            extract(file, mode, opts, course) {
+                const f = new FormData(); f.append('file', file); f.append('options', JSON.stringify(opts)); if (course) f.append('course', course);
+                return req({ courses: '/extract/courses', course: '/extract/course', full: '/extract/full' }[mode], { method: 'POST', body: f, timeout: 600000 })
+            }
+        };
+        function explain(r) {
+            const e = (r.err || '').toLowerCase();
+            if (r.status === 429 || /429|rate limit|too many requests/.test(e)) return ['LLM Rate Limit Reached', 'NVIDIA API rate limit has been reached for free tier requests.', 'Please wait a few seconds and click Retry. All local extraction is cached.'];
+            if (r.offline) return ['Backend unavailable', 'The FastAPI server is not reachable (not running, wrong URL, or CORS).', 'Start the backend, then check the API URL in Settings → API.'];
+            if (r.timeout || /timeout|504/.test(e)) return ['Model timeout', 'The model did not answer in time — large documents or a busy endpoint can cause this.', 'Retry, lower the batch size in Advanced settings, or split the PDF.'];
+            if (/ocr/.test(e)) return ['OCR failed', 'Text could not be recovered from scanned pages.', 'Retry with a higher-resolution scan or lower the OCR threshold.'];
+            if (/415|422|invalid pdf|corrupt/.test(e)) return ['Invalid PDF', 'The file is corrupt, encrypted or not a valid PDF.', 'Re-export the PDF, remove the password and upload it again.'];
+            if (/json|schema|structured/.test(e)) return ['Invalid structured response', 'The model returned output that did not match the expected schema.', 'Retry — no partial data was stored. Report it if it persists.'];
+            return ['Extraction failed', 'The server returned an error while processing.', 'Retry, or open View details and share the message with your admin.']
+        }
+        const errBox = (r, retry = 'retry') => { const [t, w, d] = explain(r); return `<div class="card eb" role="alert">${I('warn', 22)}<div><h3>${t}</h3><p><b>What happened:</b> ${esc(r.err || t)}</p><p><b>Why it may have happened:</b> ${w}</p><p><b>What you can do:</b> ${d}</p><div class="row" style="margin-top:12px;gap:8px"><a class="btn pri" href="#/extract">Upload / Try Again</a><a class="btn" href="#/documents">View Existing Documents</a><button class="btn gh" data-a="details" data-d="${esc(r.err || '')}">View details</button></div></div></div>` };
+        const empty = (ic, t, p, btn = '') => `<div class="card empty"><div class="ic">${I(ic, 24)}</div><h2>${t}</h2><p>${p}</p>${btn}</div>`;
+        const upBtn = '<a class="btn pri" href="#/extract">' + I('up') + 'Upload Syllabus</a>';
+
+        /* ---------- 3. DEV MOCK (off unless ?mock=1 or Settings → API) ---------- */
+        const MD = {
+            id: 'mock-1', filename: 'MOCK_Sample_Syllabus.pdf', college: 'Sample University (mock data)', pages: 12, status: 'needs_review', uploaded_at: new Date().toISOString(), fields: 64, needs_review: 2,
+            courses: [{ code: 'CS23301', title: 'DATA STRUCTURES', page: 4, category: 'PC', credits: 3, semester: '3' }, { code: '', title: 'ENVIRONMENTAL SCIENCE', page: 7, category: 'MC', credits: 0, semester: '3' }, { code: 'MA23101', title: 'ENGINEERING MATHEMATICS I', page: 2, category: 'BS', credits: 4, semester: '1' }],
+            details: { CS23301: { course: { code: 'CS23301', title: 'DATA STRUCTURES', category: 'PC', lecture: 3, tutorial: 0, practical: 0, credits: 3, pages: [4, 5] }, units: [{ number: 1, title: 'LINEAR STRUCTURES', hours: 9, text: 'Arrays - linked lists - stacks - queues - applications.', topics: [{ id: 'u1t1', text: 'Arrays', bloom: 'understand', bloom_source: 'inferred' }, { id: 'u1t2', text: 'linked lists', bloom: 'apply', bloom_source: 'inferred' }, { id: 'u1t3', text: 'Heaps', bloom: 'apply', bloom_source: 'inferred' }] }], course_outcomes: [{ id: 'CO1', text: 'Apply linear data structures to solve problems.', bloom: 'apply', bloom_source: 'printed' }], programme_outcomes: [], co_po_matrix: { CO1: { PO1: 'S', PO2: 'M', PO3: 'L' } }, books: [{ kind: 'text', title: 'Data Structures and Algorithm Analysis in C', author: 'Mark Allen Weiss', publisher: 'Pearson', edition: '2nd', year: 2002 }], not_extracted: ['programme_outcomes - this document does not print them'] } }
+        };
+        function MOCK(p, o) {
+            if (p === '/health') return { model: 'connected', engine: 'online', database: 'connected', ocr: 'ready' };
+            if (p === '/documents') return [MD]; if (/status$/.test(p)) { const k = Math.min(8, Math.floor((Date.now() - (S.t0 || 0)) / 1400)); return { status: k >= 8 ? 'completed' : 'processing', stage: k, page: Math.min(12, k * 2), total_pages: 12, courses: Math.min(3, k), fields: k * 8, needs_review: k > 5 ? 2 : 0 } }
+            if (/pages$/.test(p)) return Array.from({ length: 12 }, (_, i) => ({ page: i + 1, type: [4, 7, 2].includes(i + 1) ? 'Course Start' : i % 5 == 0 ? 'Table' : 'Course Content', fields: [4, 7, 2].includes(i + 1) ? 12 : i % 3 }));
+            if (p.startsWith('/extract')) return { document_id: 'mock-1' }; if (p.startsWith('/documents/mock-1/export')) return new Blob([JSON.stringify(MD, null, 2)], { type: 'application/json' }); return MD
+        }
+
+        /* ---------- 4. STATE + VALIDATION (client-side checks only; never rewrites source values) ---------- */
+        const S = {
+            docs: null, doc: null, file: null, fileUrl: null, fileId: null, pdf: null, f: { q: '', cat: '', sem: '', st: '', sort: 'page', pg: 0 }, sel: new Set(), tab: {}, zoom: 1, tok: 0,
+            set: ls('siqSet', { mode: 'full', course: '', ocr: true, proc: {}, adv: { temperature: 0, max_tokens: 8192, batch_size: 4, ocr_threshold: .6, confidence_threshold: .7, retries: 2 } })
+        };
+        const PROC = [['detect_courses', 'Detect courses'], ['boundaries', 'Detect course boundaries'], ['units', 'Extract units'], ['topics', 'Extract topics/subtopics'], ['cos', 'Extract course outcomes'], ['pos', 'Extract programme outcomes'], ['copo', 'Extract CO-PO matrix'], ['books', 'Extract books/references'], ['missing', 'Detect unreadable/missing fields']];
+        const nz = t => String(t).replace(/\s+/g, ' ').trim();
+        const norm = d => ({ ...d, status: String(d.status || '').toLowerCase().replace(' ', '_'), courses: d.courses || [], details: d.details || {} });
+        const dkey = c => c.code || c.title;
+        const detOf = (doc, c) => {
+            if (!doc || !doc.details || !c) return null;
+            if (c.code && doc.details[c.code]) return doc.details[c.code];
+            if (c.title && doc.details[c.title]) return doc.details[c.title];
+            const combo = `${c.code || ''} | ${c.title || ''}`.trim();
+            if (combo && doc.details[combo]) return doc.details[combo];
+            for (const k in doc.details) {
+                if (c.code && (k === c.code || k.startsWith(c.code + ' ') || k.startsWith(c.code + ' |'))) return doc.details[k];
+                if (c.title && k.toLowerCase().includes(c.title.toLowerCase())) return doc.details[k];
+            }
+            return null;
+        };
+        const chk = (doc) => { const r = []; for (const c of doc.courses) { const d = detOf(doc, c); if (!d) continue; for (const u of d.units || []) for (const t of u.topics || []) r.push({ k: dkey(c), t, u, ok: !u.text || nz(u.text).includes(nz(t.text)), page: d.course.pages?.[0] }) } return r };
+        function issuesOf(doc) {
+            const L = [], add = (cat, c, field, val, why, page) => L.push({ id: [cat, c, field].join('|'), cat, course: c, field, val, why, page });
+            doc.courses.forEach(c => {
+                const k = dkey(c), d = detOf(doc, c);
+                if (!c.code) add('Missing', k, 'code', '', 'The document prints no code for this course — left empty, not invented', c.page);
+                if (!c.page || c.page > doc.pages) add('Possible boundary issue', k, 'page', c.page ?? '', 'Start page missing or beyond the document length', c.page);
+                if (!d) return; const D = d.course;
+                if (D.credits == null || D.credits === '') add('Missing', k, 'credits', '', 'Credits not found in source', D.pages?.[0]);
+                if (!(d.units || []).length) add('Validation warning', k, 'units', '', 'No units were extracted for this course', D.pages?.[0]);
+                (d.not_extracted || []).forEach(n => { const [f, ...w] = n.split(' - '); add(/unread|illegible|scan|ocr/i.test(n) ? 'Unreadable' : 'Missing', k, f, '', w.join(' - ') || n, D.pages?.[0]) });
+                const inf = (d.units || []).flatMap(u => u.topics || []).filter(t => t.bloom_source === 'inferred').length;
+                if (inf) add('Low confidence', k, 'topics[].bloom', inf + ' topics', 'Bloom level was inferred by the model — the document does not print it', D.pages?.[0]);
+            }); chk(doc).filter(x => !x.ok).forEach(x => add('Source mismatch', x.k, 'topic ' + x.t.id, x.t.text, 'Topic wording was not found verbatim in the unit text it came from', x.page)); return L
+        }
+        const rev = id => ls('siqRev:' + id, {}), saveRev = (id, v) => sv('siqRev:' + id, v);
+        const cst = (doc, c) => { const d = detOf(doc, c); if (!d) return 'Index only'; return issuesOf({ ...doc, courses: [c] }).length ? 'Needs review' : 'Verified' };
+        const verifiedPct = doc => { const r = chk(doc); return r.length ? (100 * r.filter(x => x.ok).length / r.length).toFixed(1) + '%' : '—' };
+
+        /* ---------- PDF.js ---------- */
+        let _p; const pdfjs = () => _p || (_p = new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'; s.onload = () => { pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; res(pdfjsLib) }; s.onerror = () => rej(new Error('PDF.js could not be loaded')); document.head.append(s) }));
+        async function draw(pdf, n, cv, w) { const p = await pdf.getPage(n), v = p.getViewport({ scale: 1 }), vp = p.getViewport({ scale: w / v.width * (devicePixelRatio || 1) }); cv.width = vp.width; cv.height = vp.height; cv.style.width = w + 'px'; await p.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise }
+        const pdfFor = async doc => { if (S.pdf && S.pdf.id === doc.id) return S.pdf.doc; if (!S.fileUrl || S.fileId !== doc.id) return null; try { const l = await pdfjs(); S.pdf = { id: doc.id, doc: await l.getDocument(S.fileUrl).promise }; return S.pdf.doc } catch { return null } };
+        const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting && !e.target.dataset.d) { e.target.dataset.d = 1; const cv = e.target; pdfFor(S.doc).then(p => p && draw(p, +cv.dataset.p, cv, cv.dataset.w ? +cv.dataset.w : 120)) } }), { rootMargin: '200px' });
+        const thumbs = () => $$('canvas[data-p]:not([data-d])').forEach(c => io.observe(c));
+
+        /* ---------- 5. SHELL ---------- */
+        const NAV = [['dashboard', 'Dashboard', 'dash'], ['documents', 'Documents', 'file'], ['extract', 'Extract', 'up'], ['results/current', 'Courses', 'book'], ['review', 'Review', 'shield'], ['exports', 'Exports', 'down']];
+        function shell() {
+            const on = (location.hash.slice(2) || 'dashboard').split('/')[0];
+            $('#side').innerHTML = `<div class="logo"><b>SIQ</b><div><strong>SYLLABUSIQ</strong><small>Universal Syllabus Intelligence</small></div></div>
+ ${NAV.map(([h, l, i]) => `<a class="nl ${h.split('/')[0] === on || (on == 'course' && h.startsWith('results')) ? 'on' : ''}" href="#/${h}" title="${l}">${I(i, 18)}<span class="lbl">${l}</span></a>`).join('')}
+ <div class="sec">Workspace</div><a class="nl" href="#/documents">${I('file', 18)}<span class="lbl">Recent Documents</span></a><a class="nl" href="#/exports">${I('chk', 18)}<span class="lbl">Saved Extractions</span></a><button class="nl" disabled title="Not available yet">${I('grid', 18)}<span class="lbl">Templates · soon</span></button>
+ <div class="sec">System</div><a class="nl ${on == 'settings' ? 'on' : ''}" href="#/settings">${I('sliders', 18)}<span class="lbl">Settings</span></a><a class="nl" href="#/settings/api">${I('act', 18)}<span class="lbl">API Status</span></a><button class="nl" data-a="help">${I('help', 18)}<span class="lbl">Help</span></button>
+ <div class="usr"><span class="av">U</span><div style="flex:1;min-width:0"><b style="display:block">User</b><small class="mut">My Workspace</small></div><button class="ib" data-a="collapse" aria-label="Collapse sidebar" title="Collapse sidebar">${I('pnl')}</button></div>`;
+            $('#gsi').innerHTML = I('search', 15); $('#bell').innerHTML = I('bell'); $('#thm').innerHTML = I('moon');
+            $('#devb').innerHTML = CFG.mock ? '<div class="dev">DEVELOPMENT MOCK MODE — data below is sample data, not from your backend. Disable in Settings → API.</div>' : ''
+        }
+        const crumb = (...a) => $('#crumb').innerHTML = ['Workspace', ...a].map((x, i, r) => i == r.length - 1 ? `<b>${esc(x)}</b>` : esc(x)).join(' / ');
+        const set = h => { $('#view').innerHTML = `<div class="wrap">${h}</div>`; thumbs() };
+        const skel = (n = 4) => set(`<div class="card g">${Array.from({ length: n }, (_, i) => `<div class="skel" style="width:${90 - i * 12}%;height:${i ? 16 : 28}px"></div>`).join('')}</div>`);
+        let apiOk = null; async function ping() {
+            const r = await API.health(); apiOk = r.ok || r.status != null; S.health = r.ok ? r.data : null; S.ms = r.ms;
+            $('#apip').className = 'badge ' + (apiOk ? 'ok' : 'er'); $('#apip').innerHTML = `<span class="dot ${apiOk ? 'ok' : 'er'}"></span>API ${apiOk ? 'connected' + (S.ms ? ' · ' + S.ms + 'ms' : '') : 'offline'}`
+        }
+        async function docs(force) { if (S.docs && !force) return { ok: true, data: S.docs }; const r = await API.documents(); if (r.ok) { S.docs = (Array.isArray(r.data) ? r.data : r.data.documents || []).map(norm) } return r.ok ? { ok: true, data: S.docs } : r }
+        async function getDoc(id) {
+            if (id === 'current') id = S.doc?.id; if (!id) { const r = await docs(); if (!r.ok) return r; const l = r.data.find(x => x.status !== 'processing'); if (!l) return { ok: true, data: null }; id = l.id }
+            if (S.doc?.id === id && S.doc.loaded) return { ok: true, data: S.doc }; const r = await API.document(id); if (!r.ok) return r; S.doc = { ...norm(r.data), loaded: 1 }; return { ok: true, data: S.doc }
+        }
+
+        /* ---------- 5a. DASHBOARD ---------- */
+        const R = {};
+        R.dashboard = async () => {
+            crumb('Dashboard'); skel(); const h = new Date().getHours(), r = await docs();
+            const head = `<div class="ph"><div><h1>Good ${h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'}</h1><p>Turn complex syllabus PDFs into structured academic data.</p></div><div class="row"><a class="btn" href="#/documents">View Documents</a>${upBtn}</div></div>`;
+            if (!r.ok) return set(head + errBox(r)); const D = r.data || [];
+            if (!D.length) return set(head + empty('file', 'No syllabus documents yet', 'Upload your first syllabus to begin extracting structured academic data.', upBtn));
+            const wk = D.filter(d => Date.now() - new Date(d.uploaded_at) < 6048e5).length, K = [['Documents Processed', D.length, 'file', `${wk} in the last 7 days`], ['Courses Detected', D.reduce((s, d) => s + (d.course_count ?? (d.courses ? d.courses.length : 0)), 0), 'book', 'Across all documents'], ['Fields Extracted', D.reduce((s, d) => s + (d.fields || 0), 0), 'grid', 'Units, topics, outcomes, books…'], ['Needs Review', D.reduce((s, d) => s + (d.needs_review || 0), 0), 'warn', 'Fields awaiting a human decision']];
+            const H = S.health || {}, hv = (k, o) => H[k] ? `<span class="badge ok">${esc(H[k][0].toUpperCase() + H[k].slice(1))}</span>` : `<span class="badge">Unknown</span>`;
+            set(head + `<div class="g g4">${K.map(k => `<div class="card kpi"><div class="t"><span>${k[0]}</span>${I(k[2], 18)}</div><div class="n">${fmt(k[1])}</div><small class="mut">${k[3]}</small></div>`).join('')}</div>
+ <div class="g g2" style="margin-top:16px"><div class="card"><h2>Extraction Activity <small class="mut" style="font-weight:400">· last 7 days, each series scaled independently</small></h2>${chart(D)}</div>
+ <div class="card"><h2>AI Health</h2>${[['Model', (S.health?.model || 'meta/llama-3.2-11b-vision-instruct') + ' · NVIDIA NIM', apiOk ? '<span class="badge ok">Configured in backend</span>' : '<span class="badge er">Unreachable</span>'], ['API', CFG.api, `<span class="badge ${apiOk ? 'ok' : 'er'}">${apiOk ? 'Connected' : 'Offline'}</span>`], ['Extraction Engine', '', hv('engine')], ['Database', 'FastAPI Persistence', '<span class="badge ok">Ready</span>'], ['OCR', 'Tesseract OCR', '<span class="badge ok">Ready</span>']].map(x => `<div class="tr row"><div style="flex:1"><b>${x[0]}</b><br><small class="mut">${esc(x[1])}</small></div>${x[2]}</div>`).join('')}<p class="mut" style="margin-top:8px;font-size:12px">SYLLABUSIQ Universal Syllabus Intelligence Engine</p></div></div>
+ <div class="card" style="margin-top:16px"><h2>Recent Documents</h2>${docTable(D.slice(0, 6))}</div>`)
+        };
+        function chart(D) {
+            const days = [...Array(7)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() - 6 + i); return d.toISOString().slice(0, 10) }), g = days.map(d => D.filter(x => (x.uploaded_at || '').slice(0, 10) === d));
+            const S4 = [['Documents processed', g.map(a => a.length), 'var(--pri)'], ['Courses detected', g.map(a => a.reduce((s, y) => s + (y.course_count ?? (y.courses ? y.courses.length : 0)), 0)), 'var(--in)'], ['Extraction success', g.map(a => a.filter(y => y.status === 'completed').length), 'var(--ok)'], ['Review required', g.map(a => a.filter(y => y.status === 'needs_review').length), 'var(--wn)']];
+            const W = 600, H = 190, x = i => 30 + i * (W - 50) / 6, path = (v, m) => v.map((y, i) => `${i ? 'L' : 'M'}${x(i)},${H - 24 - (m ? y / m : 0) * (H - 50)}`).join('');
+            return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Extraction activity over the last 7 days">${[0, 1, 2, 3].map(i => `<line x1="24" x2="${W - 10}" y1="${H - 24 - i * (H - 50) / 3}" y2="${H - 24 - i * (H - 50) / 3}" stroke="var(--bd)"/>`).join('')}${days.map((d, i) => `<text x="${x(i)}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--mut)">${d.slice(5)}</text>`).join('')}
+ ${S4.map(([n, v, c]) => { const m = Math.max(...v, 1); return `<path d="${path(v, m)}" fill="none" stroke="${c}" stroke-width="2"/>${v.map((y, i) => `<circle cx="${x(i)}" cy="${H - 24 - (m ? y / m : 0) * (H - 50)}" r="3.5" fill="${c}"><title>${n}: ${y} (${days[i]})</title></circle>`).join('')}` }).join('')}</svg>
+ <div class="row" style="margin-top:6px">${S4.map(s => `<span class="badge"><span class="dot" style="background:${s[2]}"></span>${s[0]}</span>`).join('')}</div>`
+        }
+        const docTable = D => `<div class="tw"><table><caption class="mut" style="text-align:left;padding:0;height:0;overflow:hidden">Documents</caption><thead><tr>${['Document', 'Pages', 'Courses', 'Status', 'Uploaded', 'Actions'].map(h => `<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${D.map(d => `<tr><td><a href="#/results/${d.id}" style="font-weight:500">${esc(d.filename)}</a></td><td>${fmt(d.pages)}</td><td>${fmt(d.course_count ?? (d.courses ? d.courses.length : 0))}</td><td>${sb(d.status)}</td><td class="mut">${ago(d.uploaded_at)}</td><td><a class="btn sm" href="${d.status == 'processing' ? '#/processing/' + d.id : '#/results/' + d.id}">Open</a></td></tr>`).join('')}</tbody></table></div>`;
+        R.documents = async () => {
+            crumb('Documents'); skel(); const r = await docs(true); const q = S.dq || '';
+            const head = `<div class="ph"><div><h1>Documents</h1><p>Every syllabus PDF you have processed.</p></div>${upBtn}</div>`;
+            if (!r.ok) return set(head + errBox(r)); let D = (r.data || []).filter(d => !q || (d.filename || '').toLowerCase().includes(q.toLowerCase()));
+            set(head + (D.length ? docTable(D) : empty('file', q ? 'No matching documents' : 'No syllabus documents yet', q ? 'Try a different search.' : 'Upload your first syllabus to begin extracting structured academic data.', q ? '' : upBtn)))
+        };
+
+        /* ---------- 5b. UPLOAD / EXTRACT ---------- */
+        const MAXMB = 100;
+        R.extract = () => {
+            crumb('Extract'); const s = S.set, f = S.file, M = [['courses', 'COURSE INDEX', 'Detect every course and its starting page.'], ['full', 'FULL SYLLABUS', 'Extract complete structured syllabus information.'], ['course', 'SINGLE COURSE', 'Extract detailed information for one selected course.']];
+            set(`<div class="ph"><div><h1>Extract a Syllabus</h1><p>Upload a syllabus PDF and let AI identify courses, pages, units, topics, outcomes and academic mappings.</p></div></div>
+ <div class="g" style="max-width:980px"><input type="file" id="fi" accept="application/pdf,.pdf" hidden>
+ ${f ? `<div class="card row" style="gap:14px"><span class="av" style="border-radius:11px;width:44px;height:44px">${I('file', 22)}</span><div style="flex:1;min-width:0"><b>${esc(f.name)}</b><div class="mut" id="fmeta">${(f.size / 1048576).toFixed(2)} MB · counting pages…</div><div class="bar" style="margin-top:8px"><i id="pb" style="width:0"></i></div></div><button class="ib" data-a="rmfile" aria-label="Remove file">${I('x')}</button></div>`
+                    : `<div class="drop" id="dz" tabindex="0" role="button" aria-label="Choose a PDF" data-a="browse"><div class="ic">${I('file', 26)}</div><h2 style="font-size:18px">Drop your syllabus PDF here</h2><p class="mut" style="margin:4px 0 14px">or browse from your computer</p><button class="btn pri" data-a="browse">Browse files</button><p class="mut" style="margin-top:14px;font-size:12.5px">Supported: PDF · Maximum file size ${MAXMB} MB</p></div>`}
+ <div class="card" style="${f ? '' : 'opacity:.6'}"><h2>Extraction Settings</h2>
+  <b>Extraction Mode</b><div class="opts" style="margin:8px 0 6px" role="radiogroup">${M.map(m => `<label class="opt"><input type="radio" name="mode" value="${m[0]}" ${s.mode == m[0] ? 'checked' : ''}><b>${m[1]}</b><small>${m[2]}</small></label>`).join('')}</div>
+  <div id="cw" style="margin-bottom:14px;${s.mode == 'course' ? '' : 'display:none'}"><input type="text" id="cc" placeholder="Course code or exact title, e.g. CS23301" value="${esc(s.course)}" style="width:100%;max-width:420px" aria-label="Course to extract"></div>
+  <div class="row" style="justify-content:space-between;border:1px solid var(--bd);border-radius:11px;padding:11px 14px;margin:14px 0"><div><b>AI Model</b><div class="mut">${esc(S.health?.model || 'meta/llama-3.2-11b-vision-instruct')} · NVIDIA NIM</div></div><span class="badge ${apiOk ? 'ok' : 'er'}"><span class="dot ${apiOk ? 'ok' : 'er'}"></span>${apiOk ? 'Available' : 'Backend offline'}</span></div>
+  <b>Document Processing</b><div class="chk" style="margin:8px 0 14px">${PROC.map(([k, l]) => `<label><input type="checkbox" data-p="${k}" ${s.proc[k] !== false ? 'checked' : ''}>${l}</label>`).join('')}</div>
+  <label class="tg" style="margin-bottom:14px"><input type="checkbox" id="ocr" ${s.ocr ? 'checked' : ''}><span><b>Automatic OCR fallback</b><br><span class="mut">Automatically use OCR when PDF text cannot be extracted reliably.</span></span></label>
+  <div class="note" style="margin-bottom:14px">${I('lock', 20)}<div><b>Source text will be preserved exactly.</b><ul><li>Do not rewrite extracted text</li><li>Do not correct spelling</li><li>Do not invent missing values</li><li>Empty fields remain empty</li><li>Unreadable content is reported</li></ul></div></div>
+  <details><summary><span class="cv">${I('chev', 14)}</span>Advanced settings</summary><div class="db adv">${Object.entries(s.adv).map(([k, v]) => `<label>${k.replace(/_/g, ' ')}<input type="number" step="any" data-adv="${k}" value="${v}"></label>`).join('')}</div></details></div>
+ <div class="row"><button class="btn pri" id="go" data-a="start" ${f ? '' : 'disabled'}>Start Extraction</button><span class="mut">Stages shown live: validate → pages → layout → courses → boundaries → fields → validation → results.</span></div></div>`);
+            const fi = $('#fi'), dz = $('#dz'); fi.onchange = () => setFile(fi.files[0]);
+            if (dz) { ['dragover', 'dragenter'].forEach(e => dz.addEventListener(e, x => { x.preventDefault(); dz.classList.add('ov') }));['dragleave', 'drop'].forEach(e => dz.addEventListener(e, () => dz.classList.remove('ov'))); dz.addEventListener('drop', x => { x.preventDefault(); setFile(x.dataTransfer.files[0]) }); dz.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fi.click() } } }
+            if (f && !f._read) readFile(f)
+        };
+        function setFile(f) {
+            if (!f) return; if (!/pdf$/i.test(f.type) && !/\.pdf$/i.test(f.name)) return toast('Invalid file — only PDF is supported', 'er'); if (f.size > MAXMB * 1048576) return toast(`File exceeds ${MAXMB} MB`, 'er');
+            S.file = f; S.fileUrl && URL.revokeObjectURL(S.fileUrl); S.fileUrl = URL.createObjectURL(f); S.pdf = null; route()
+        }
+        function readFile(f) {
+            f._read = 1; const r = new FileReader(); r.onprogress = e => { const b = $('#pb'); if (b && e.lengthComputable) b.style.width = (100 * e.loaded / e.total) + '%' };
+            r.onload = async () => { const b = $('#pb'); b && (b.style.width = '100%'); try { const l = await pdfjs(), p = await l.getDocument({ data: new Uint8Array(r.result) }).promise; f._pages = p.numPages; $('#fmeta') && ($('#fmeta').textContent = `${(f.size / 1048576).toFixed(2)} MB · ${p.numPages} pages`) } catch { $('#fmeta') && ($('#fmeta').textContent = `${(f.size / 1048576).toFixed(2)} MB · page count unavailable (PDF.js offline or file unreadable)`) } }; r.readAsArrayBuffer(f)
+        }
+        async function start() {
+            const b = $('#go'); b.disabled = true; b.textContent = 'Uploading…'; const s = S.set;
+            if (s.mode === 'course' && !s.course.trim()) { b.disabled = false; b.textContent = 'Start Extraction'; return toast('Enter the course code or title to extract', 'er') }
+            sv('siqSet', s); const r = await API.extract(S.file, s.mode, { mode: s.mode, ocr_fallback: s.ocr, processing: Object.fromEntries(PROC.map(([k]) => [k, s.proc[k] !== false])), ...s.adv }, s.course.trim());
+            if (!r.ok) { S.err = r; return location.hash = '#/processing/failed' } const id = r.data.document_id || r.data.id; S.fileId = id; S.t0 = Date.now(); S.docs = null; S.doc = null; location.hash = '#/processing/' + id
+        }
+
+        /* ---------- 5c. PROCESSING ---------- */
+        const STEPS = ['Upload validated', 'PDF pages detected', 'Text/layout extracted', 'Courses identified', 'Course boundaries detected', 'Syllabus fields extracted', 'Validation running', 'Results ready'];
+        R.processing = async id => {
+            crumb('Documents', 'Processing');
+            if (id === 'failed' || !id) return set(`<div class="ph"><h1>Extraction could not start</h1></div>` + errBox(S.err || { err: 'Unknown error' }, 'back'));
+            const tick = async () => {
+                const r = await API.status(id); if (S.tok !== tok) return; if (!r.ok) { clearInterval(S.timer); return set(`<div class="ph"><h1>Lost contact with the backend</h1></div>` + errBox(r)) }
+                const s = r.data, fail = s.status === 'failed', done = s.status === 'completed' || s.status === 'needs_review', st = done ? 8 : s.stage || 0; if (done) clearInterval(S.timer);
+                const det = [, s.total_pages ? `${s.total_pages} pages detected` : '', s.page ? `Analyzing page ${s.page} of ${s.total_pages}` : '', s.courses ? `Detected ${s.courses} possible course sections` : '', '', '', `Validating extracted fields`, ''];
+                set(`<div class="ph"><div><h1>${fail ? 'Extraction failed' : done ? 'Analysis complete' : 'Analyzing syllabus…'}</h1><p>${esc(S.file?.name || s.filename || 'Document ' + id)}</p></div><div class="row"><a class="btn ${done ? 'pri' : ''}" href="#/results/${id}">${done ? 'Open results' : 'View live results'}</a></div></div>
+  ${fail ? errBox({ err: s.error || 'failed' }) : ''}<div class="g g2"><div class="card"><div class="steps">${STEPS.map((n, i) => { const c = fail && i === st ? 'fail' : i < st ? 'done' : i === st ? 'run' : ''; return `<div class="step ${c}"><span class="m">${c == 'done' ? I('chk', 14) : c == 'fail' ? I('x', 14) : i + 1}</span><div style="flex:1"><b>${n}</b><div class="mut">${c == 'run' ? (det[i] || 'In progress…') : c == 'done' ? 'Completed' : c == 'fail' ? 'Failed' : 'Pending'}</div>${c == 'run' && i == 2 && s.total_pages ? `<div class="bar" style="margin-top:6px"><i style="width:${100 * s.page / s.total_pages}%"></i></div>` : ''}</div></div>` }).join('')}</div></div>
+  <div class="card"><h2>Live extraction statistics</h2>${[['Pages scanned', s.page != null ? `${s.page} / ${s.total_pages}` : '—'], ['Courses detected', fmt(s.courses)], ['Fields extracted', fmt(s.fields)], ['Needs review', fmt(s.needs_review)]].map(x => `<div class="tr row"><span class="mut sp">${x[0]}</span><b>${x[1]}</b></div>`).join('')}</div></div>`)
+            };
+            const tok = S.tok; await tick(); S.timer = setInterval(tick, 1500)
+        };
+        R.back = () => history.back();
+
+        /* ---------- 5d. RESULTS ---------- */
+        R.results = async id => {
+            crumb('Documents', 'Results'); skel(); const r = await getDoc(id || 'current'); const head = `<div class="ph"><div><h1>Extraction Results</h1></div>${upBtn}</div>`;
+            if (!r.ok) return set(head + errBox(r)); const doc = r.data; if (!doc) return set(head + empty('book', 'No courses to show yet', 'Extract a syllabus and its detected courses will appear here.', upBtn));
+            crumb('Documents', doc.filename); const t = S.tab.res || 'idx', iss = issuesOf(doc), tabs = [['idx', 'Course Index'], ['pages', 'Page Explorer'], ['gaps', 'Could Not Be Extracted']];
+            set(`<div class="ph"><div><h1>Extraction Results</h1><p class="row"><span class="mono">${esc(doc.filename)}</span>${sb(doc.status)}</p></div><div class="row"><a class="btn" href="#/review">${I('shield')}Review Issues</a><button class="btn" data-a="qexp" data-f="json">${I('down')}Export JSON</button><button class="btn" data-a="qexp" data-f="xlsx">Export Excel</button><button class="btn" data-a="qexp" data-f="pdf">Download Report</button></div></div>
+ <div class="g g4" style="margin-bottom:16px">${[['Pages', fmt(doc.pages), 'Pages in source PDF'], ['Courses', fmt(doc.course_count ?? doc.courses.length), 'Detected in document'], ['Fields', fmt(doc.fields), 'Extracted values'], ['Verified', verifiedPct(doc), 'Topics found verbatim in source unit text · ' + iss.length + ' open flags']].map(k => `<div class="card kpi"><span class="mut">${k[0]}</span><div class="n">${k[1]}</div><small class="mut">${k[2]}</small></div>`).join('')}</div>
+ <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${t == k}" data-a="tab" data-g="res" data-k="${k}">${l}</button>`).join('')}</div><div id="tp"></div>`);
+            if (t == 'idx') idx(doc); else if (t == 'pages') pagesView(doc); else gaps(doc)
+        };
+        function idx(doc) {
+            const cats = [...new Set(doc.courses.map(c => c.category).filter(Boolean))], sems = [...new Set(doc.courses.map(c => c.semester).filter(Boolean))], f = S.f;
+            $('#tp').innerHTML = `<div class="row" style="margin-bottom:12px"><div class="sb" style="width:260px">${I('search', 15)}<input type="text" data-f="q" value="${esc(f.q)}" placeholder="Search code or title" aria-label="Search courses"></div>
+ <select data-f="sem" aria-label="Semester"><option value="">All semesters</option>${sems.map(s => `<option ${f.sem == s ? 'selected' : ''}>${esc(s)}</option>`)}</select><select data-f="cat" aria-label="Category"><option value="">All categories</option>${cats.map(s => `<option ${f.cat == s ? 'selected' : ''}>${esc(s)}</option>`)}</select>
+ <select data-f="st" aria-label="Status"><option value="">All statuses</option>${['Verified', 'Needs review', 'Index only'].map(s => `<option ${f.st == s ? 'selected' : ''}>${s}</option>`)}</select><select data-f="sort" aria-label="Sort"><option value="page">Sort by page</option><option value="code" ${f.sort == 'code' ? 'selected' : ''}>Sort by course code</option></select><span class="sp"></span><button class="btn pri" data-a="extractAllCourses" id="btnExtractAll" title="Extract complete units, topics, and books for all courses in this syllabus">${I('cpu')} Extract All ${doc.courses.length} Courses</button><button class="btn" data-a="bulk" id="bulk">${I('down')}Export selected (${S.sel.size})</button></div><div id="ct"></div>`; drawTable()
+        }
+        function drawTable() {
+            const doc = S.doc, f = S.f, q = f.q.toLowerCase(); let L = doc.courses.map((c, i) => ({ ...c, i, st: cst(doc, c) })).filter(c => (!q || (c.code + ' ' + c.title).toLowerCase().includes(q)) && (!f.cat || c.category === f.cat) && (!f.sem || String(c.semester) === f.sem) && (!f.st || c.st === f.st));
+            L.sort((a, b) => f.sort == 'code' ? (a.code || '\uffff').localeCompare(b.code || '\uffff') : (a.page || 0) - (b.page || 0)); const per = 15, n = L.length, pgs = Math.max(1, Math.ceil(n / per)); f.pg = Math.min(f.pg, pgs - 1);
+            const badge = s => `<span class="badge ${s == 'Verified' ? 'ok' : s == 'Needs review' ? 'wn' : ''}">${s}</span>`;
+            $('#ct').innerHTML = n ? `<div class="tw"><table><thead><tr><th class="c"><input type="checkbox" data-a="selall" aria-label="Select all on page"></th>${['#', 'Course Code', 'Course Title', 'Page', 'Category', 'Credits', 'Status', 'Actions'].map(h => `<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${L.slice(f.pg * per, f.pg * per + per).map(c => `<tr><td class="c"><input type="checkbox" data-a="sel" data-i="${c.i}" ${S.sel.has(c.i) ? 'checked' : ''} aria-label="Select ${esc(c.title)}"></td><td class="mut">${String(c.i + 1).padStart(2, '0')}</td><td class="mono">${c.code ? esc(c.code) : '<span class="mut" title="Document prints no code">—</span>'}</td><td><a href="#/course/${doc.id}/${c.i}" style="font-weight:500">${esc(c.title)}</a></td><td>${c.page ?? '—'}</td><td>${esc(c.category || '—')}</td><td>${c.credits ?? '—'}</td><td>${badge(c.st)}</td><td><a class="btn sm" href="#/course/${doc.id}/${c.i}">Open</a></td></tr>`).join('')}</tbody></table></div>
+ <div class="row" style="margin-top:10px"><span class="mut sp">${n} course${n > 1 ? 's' : ''} · page ${f.pg + 1} of ${pgs}</span><button class="btn sm" data-a="pg" data-d="-1" ${f.pg ? '' : 'disabled'}>Previous</button><button class="btn sm" data-a="pg" data-d="1" ${f.pg < pgs - 1 ? '' : 'disabled'}>Next</button></div>` : empty('search', 'No courses match', 'Adjust the search or filters.');
+            $('#bulk') && ($('#bulk').innerHTML = I('down') + `Export selected (${S.sel.size})`)
+        }
+        async function pagesView(doc) {
+            $('#tp').innerHTML = '<div class="skel" style="height:140px"></div>'; const r = await API.pages(doc.id);
+            if (!r.ok) return $('#tp').innerHTML = errBox(r); const P = Array.isArray(r.data) ? r.data : r.data.pages || []; if (!P.length) return $('#tp').innerHTML = empty('grid', 'No page data', 'The backend returned no per-page information for this document.');
+            const ty = S.tab.pt || '', types = [...new Set(P.map(p => p.type || 'Unknown'))];
+            $('#tp').innerHTML = `<div class="row" style="margin-bottom:12px"><select data-a="ptype" aria-label="Page type"><option value="">All page types</option>${types.map(x => `<option ${ty == x ? 'selected' : ''}>${esc(x)}</option>`)}</select><span class="mut">${P.length} pages</span></div><div class="pg">${P.filter(p => !ty || (p.type || 'Unknown') === ty).map(p => { const c = doc.courses.findIndex(c => c.page === p.page); return `<a class="pc" href="${c >= 0 ? `#/course/${doc.id}/${c}` : '#/results/' + doc.id}"><canvas data-p="${p.page}" data-w="150" aria-hidden="true"></canvas><div style="margin-top:6px"><b>Page ${p.page}</b><br><span class="badge ${p.type == 'Course Start' ? 'in' : ''}">${esc(p.type || 'Unknown')}</span><div class="mut" style="font-size:12px;margin-top:2px">${p.fields ?? 0} fields extracted</div></div></a>` }).join('')}</div>${S.fileId === doc.id ? '' : '<p class="mut" style="margin-top:10px;font-size:12.5px">Thumbnails render when the source PDF is available in this browser session.</p>'}`; thumbs()
+        }
+        function gaps(doc) {
+            const rows = []; doc.courses.forEach(c => { const d = detOf(doc, c); if (!c.code) rows.push([dkey(c), 'code', 'Not present — document prints no course code', c.page, 'Left empty']); (d?.not_extracted || []).forEach(n => { const [f, ...w] = n.split(' - '); rows.push([dkey(c), f, w.join(' - ') || n, d.course.pages?.[0], 'Reported by extractor']) }) });
+            $('#tp').innerHTML = rows.length ? `<p class="mut" style="margin-bottom:10px">Honest limits of this extraction. Empty fields stay empty — nothing here was guessed.</p><div class="tw"><table><thead><tr>${['Course', 'Field', 'Reason', 'Page', 'Status'].map(h => `<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r[0])}</td><td class="mono">${esc(r[1])}</td><td>${esc(r[2])}</td><td>${r[3] ?? '—'}</td><td><span class="badge wn">${r[4]}</span></td></tr>`).join('')}</tbody></table></div>` : empty('ok', 'Nothing reported as missing', 'The extractor reported no fields it could not read for the courses loaded.')
+        }
+
+        /* ---------- 5e. COURSE DETAIL ---------- */
+        R.course = async (id, i) => {
+            skel(); const r = await getDoc(id); if (!r.ok) return set(errBox(r)); const doc = r.data, c = doc?.courses[i]; if (!c) return set(empty('book', 'Course not found', 'This course is not part of the loaded document.', '<a class="btn" href="#/results/current">Back to results</a>'));
+            crumb('Documents', doc.filename, c.title); const d = detOf(doc, c), t = S.tab.cd || 'units';
+            const pgs = d?.course?.pages?.length ? d.course.pages : (c.detail_pages?.length ? c.detail_pages : (c.pages?.length ? c.pages : (c.page ? [c.page] : [1])));
+            const cur = S.pg || pgs[0] || 1; S.pg = cur; S.cur = { doc, c, d, pgs, i };
+            
+            // Build comprehensive thumbnail page list: course pages + 2 before + 2 after
+            const minP = Math.max(1, (pgs[0] || 1) - 2);
+            const maxP = Math.min(doc.pages || 1e4, (pgs.at(-1) || 1) + 2);
+            const nb = [];
+            for (let p = minP; p <= maxP; p++) nb.push(p);
+            pgs.forEach(p => { if (!nb.includes(p) && p >= 1 && p <= (doc.pages || 1e4)) nb.push(p); });
+            nb.sort((a, b) => a - b);
+
+            const T = [
+                ['units', `Units & Subtopics ${d?.units?.length ? `(${d.units.length})` : ''}`],
+                ['topics', `All Topics ${d?.units ? `(${d.units.reduce((s, u) => s + (u.topics?.length || 0), 0)})` : ''}`],
+                ['cos', `COs ${d?.course_outcomes?.length ? `(${d.course_outcomes.length})` : ''}`],
+                ['pos', `POs & PSOs ${((d?.programme_outcomes?.length || 0) + (d?.programme_specific_outcomes?.length || 0)) ? `(${((d?.programme_outcomes?.length || 0) + (d?.programme_specific_outcomes?.length || 0))})` : ''}`],
+                ['copo', 'CO-PO Matrix'],
+                ['books', `Books & References ${d?.books?.length ? `(${d.books.length})` : ''}`],
+                ['ov', 'Overview'],
+                ['val', 'Validation']
+            ];
+
+            const pageChips = pgs.map(p => `<button class="btn sm ${p == cur ? 'pri' : 'gh'}" data-a="goto" data-p="${p}" title="Jump to Page ${p}">Page ${p}</button>`).join(' ');
+            const idxP = c.index_page || (c.index_pages && c.index_pages[0]);
+            const idxChip = idxP ? `<span class="badge" style="font-size:12px;margin-left:4px">Index Page: <button class="btn sm gh" data-a="goto" data-p="${idxP}" style="padding:1px 6px;margin-left:4px;font-size:11px">Page ${idxP}</button></span>` : '';
+            const detailStartChip = pgs.length ? `<span class="badge ok" style="font-size:12px">Detail Start: Page ${pgs[0]}</span>` : '';
+
+            set(`<div class="ph" style="margin-bottom:12px">
+<div>
+  <a href="#/results/${doc.id}" class="mut">← Back to courses</a>
+  <h1>${esc(c.title)}</h1>
+  <div class="row" style="gap:8px;margin-top:4px;flex-wrap:wrap">
+    <span class="mono" style="font-weight:600">${c.code ? esc(c.code) : '—'}</span>
+    ${badge2(cst(doc, c))}
+    ${detailStartChip}
+    ${idxChip}
+    <span class="mut" style="display:inline-flex;align-items:center;gap:6px">Course Detail Pages (${pgs.length}): ${pageChips}</span>
+  </div>
+</div>
+<div class="row" style="gap:8px">
+  <button class="btn" data-a="cprev">Previous course</button>
+  <button class="btn" data-a="cnext">Next course</button>
+  ${d ? `<button class="btn sm gh" id="btnExtractNow" data-a="extractCourse" data-id="${esc(doc.id)}" data-code="${esc(c.code)}" data-title="${esc(c.title)}" data-force="1" title="Re-extract with AI">${I('up')} Re-extract</button>` : ''}
+</div>
+</div>
+<div class="doc">
+  <div class="card" aria-label="Page navigator">
+    <div style="padding:10px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center">
+      <b style="font-size:12px">Pages (${doc.pages || '—'})</b>
+      <button class="btn sm gh" data-a="jumpAll" style="font-size:11px;padding:2px 6px">Jump…</button>
+    </div>
+    <div class="pn">
+      ${nb.map(p => `<button class="th ${p == cur ? 'on' : ''}" data-a="goto" data-p="${p}" aria-label="Page ${p}" style="${pgs.includes(p) ? 'border-color:var(--pri);background:var(--pris)' : ''}">
+        <canvas data-p="${p}"></canvas>
+        Page ${p}${pgs.includes(p) ? ' <b style="color:var(--pri)">● Course</b>' : ''}
+      </button>`).join('') || '<span class="mut">No pages</span>'}
+    </div>
+  </div>
+  <div class="card">
+    <div class="tb">
+      <button class="ib" data-a="pp" data-d="-1" aria-label="Previous page">‹</button>
+      <input type="number" id="pn" value="${cur}" min="1" max="${doc.pages || 999}" style="width:64px;height:30px" aria-label="Page number">
+      <span class="mut">/ ${doc.pages || '—'}</span>
+      <button class="ib" data-a="pp" data-d="1" aria-label="Next page">›</button>
+      <span class="sp"></span>
+      <button class="ib" data-a="zoom" data-d="-.15" aria-label="Zoom out">${I('zo')}</button>
+      <button class="ib" data-a="zoom" data-d="0" aria-label="Fit width" title="Fit width">Fit</button>
+      <button class="ib" data-a="zoom" data-d=".15" aria-label="Zoom in">${I('zi')}</button>
+      <input type="text" id="ps" placeholder="Search PDF" style="width:120px;height:30px" aria-label="Search in PDF">
+      <button class="ib" data-a="fs" aria-label="Full screen">${I('full')}</button>
+    </div>
+    <div class="pdf" id="pv"></div>
+  </div>
+  <div class="card">
+    <div class="tabs" role="tablist" style="padding:6px 10px 0;margin:0;overflow-x:auto">
+      ${T.map(([k, l]) => `<button role="tab" aria-selected="${t == k}" data-a="tab" data-g="cd" data-k="${k}">${l}</button>`).join('')}
+    </div>
+    <div class="pn" id="rp">
+      ${d ? pane(t, d, c) : empty('file', 'Detailed syllabus not extracted yet', `Extract all units, topics, subtopics, course outcomes, programme outcomes, and reference books across all pages of <b>${esc(c.code ? c.code + ' — ' + c.title : c.title)}</b> with AI.`, `<button class="btn pri" id="btnExtractNow" data-a="extractCourse" data-id="${esc(doc.id)}" data-code="${esc(c.code)}" data-title="${esc(c.title)}">${I('up')} Extract all units & topics for this course</button>`)}
+    </div>
+  </div>
+</div>`); showPage(cur);
+        };
+        const badge2 = s => `<span class="badge ${s == 'Verified' ? 'ok' : s == 'Needs review' ? 'wn' : ''}">${s}</span>`;
+        async function showPage(n) {
+            S.pg = n; const pv = $('#pv'); if (!pv) return; $$('.th').forEach(b => b.classList.toggle('on', +b.dataset.p == n)); $('#pn') && ($('#pn').value = n);
+            const p = await pdfFor(S.cur.doc); if (!p) { const r = await API.pages(S.cur.doc.id), pg = (r.ok && (Array.isArray(r.data) ? r.data : r.data.pages || []).find(x => x.page == n)); return pv.innerHTML = `<div class="card" style="text-align:left"><b>PDF preview unavailable</b><p class="mut">The source PDF is only previewed in the session where it was uploaded. Showing backend text for page ${n} if provided.</p>${pg?.text ? `<div class="src">${esc(pg.text)}</div>` : '<p class="mut">No page text returned by /documents/:id/pages.</p>'}</div>` }
+            pv.innerHTML = '<canvas></canvas>'; const w = Math.max(280, (pv.clientWidth - 32) * S.zoom); draw(p, n, pv.firstChild, w)
+        }
+        const evBtn = (p, src, hl) => `<button class="btn sm gh" data-a="evid" data-p="${p ?? ''}" data-x="${esc(src)}" data-h="${esc(hl)}">${I('eye', 14)}Evidence</button>`;
+        const srcLnk = p => p ? `<button class="btn sm gh mono" data-a="goto" data-p="${p}" title="Scroll the PDF to this page">Page ${p}</button>` : '<span class="mut">—</span>';
+        
+        function pane(t, d, c) {
+            const D = d.course, p0 = D.pages?.[0] || c.page || 1, bl = x => `<span class="badge ${x.bloom_source == 'printed' ? 'ok' : 'wn'}" title="${x.bloom_source == 'printed' ? 'Level printed in document' : 'Inferred Bloom level'}">${esc(x.bloom || 'understand')} · ${esc(x.bloom_source || 'inferred')}</span>`;
+            if (t == 'ov') {
+                const fields = [
+                    ['Course Code', D.code || c.code],
+                    ['Course Title', D.title || c.title],
+                    ['Category', D.category || c.category],
+                    ['Semester', D.semester || c.semester],
+                    ['Lecture (L)', D.lecture],
+                    ['Tutorial (T)', D.tutorial],
+                    ['Practical (P)', D.practical],
+                    ['Credits', D.credits ?? c.credits],
+                    ['Contact Hours', D.contact_hours],
+                    ['Prerequisites', D.prerequisites],
+                    ['Course Objectives', D.objectives]
+                ];
+                return `<p class="mut" style="margin-bottom:8px">Extracted course parameters. The source PDF is the ground truth.</p>
+                ${fields.filter(([_, v]) => v !== undefined).map(([l, v]) => `<div class="fld"><span class="mut">${l}</span><span class="val">${v === '' || v == null ? '<span class="mut">— <small>not found in source</small></span>' : esc(v)}</span>${srcLnk(p0)}</div>`).join('')}
+                <div class="fld"><span class="mut">Pages Covered</span><span class="val">${(D.pages || []).map(p => `<button class="btn sm gh mono" data-a="goto" data-p="${p}">Page ${p}</button>`).join(' ') || '—'}</span><span></span></div>`;
+            }
+            if (t == 'units') {
+                const totalTopics = (d.units || []).reduce((s, u) => s + (u.topics?.length || 0), 0);
+                if (!(d.units || []).length) return empty('file', 'No units extracted', 'No units or modules found for this course.');
+                return `<div class="row" style="justify-content:space-between;margin-bottom:12px">
+                    <span class="mut"><b>${d.units.length} Units</b> · <b>${totalTopics} Subtopics</b> Extracted</span>
+                    <div class="row" style="gap:6px">
+                        <button class="btn sm gh" data-a="expandAllUnits">Expand all</button>
+                        <button class="btn sm gh" data-a="collapseAllUnits">Collapse all</button>
+                    </div>
+                </div>
+                ${d.units.map(u => `<details open class="unit-card" style="margin-bottom:12px;border:1px solid var(--bd);border-radius:10px;padding:8px 12px;background:var(--card)">
+                    <summary style="cursor:pointer;display:flex;align-items:center;gap:8px;font-weight:600">
+                        <span class="cv">${I('chev', 14)}</span>
+                        <span>UNIT ${esc(u.number)}: ${esc(u.title)}</span>
+                        <span class="sp"></span>
+                        ${u.hours != null ? `<span class="badge in">${u.hours} Hours</span>` : ''}
+                    </summary>
+                    <div class="db" style="margin-top:10px">
+                        ${u.text ? `<div class="src" style="margin-bottom:8px"><b>Verbatim Syllabus Description:</b><br>${esc(u.text)}</div>` : ''}
+                        <div class="row" style="margin:8px 0;justify-content:space-between">
+                            <span class="mut" style="font-weight:500">${(u.topics || []).length} Topics & Subtopics</span>
+                            ${evBtn(p0, u.text || u.title, '')}
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:6px">
+                            ${(u.topics || []).map((x, idx) => `<div class="tr row" style="padding:6px 8px;background:var(--hov);border-radius:6px;gap:8px">
+                                <span class="mono mut" style="width:45px;font-size:11px">${esc(x.id || 'u'+u.number+'t'+(idx+1))}</span>
+                                <span style="flex:1"><b>${esc(x.text)}</b></span>
+                                ${bl(x)}
+                                ${evBtn(p0, u.text, x.text)}
+                            </div>`).join('') || '<span class="mut">No individual topics parsed</span>'}
+                        </div>
+                    </div>
+                </details>`).join('')}`;
+            }
+            if (t == 'topics') {
+                const T = (d.units || []).flatMap(u => (u.topics || []).map((x, idx) => ({ u, x, idx })));
+                if (!T.length) return empty('file', 'No topics extracted', 'No topic list available.');
+                return `<div class="row" style="margin-bottom:12px">
+                    <span class="mut">All <b>${T.length} extracted topics & subtopics</b> across ${d.units.length} units:</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    ${T.map(({ u, x, idx }) => {
+                        const ok = nz(u.text || '').toLowerCase().includes(nz(x.text).toLowerCase());
+                        return `<div class="tr row" style="padding:8px 10px;background:var(--card);border:1px solid var(--bd);border-radius:8px;gap:10px">
+                            <span class="badge" style="font-size:11px">Unit ${esc(u.number)}</span>
+                            <span style="flex:1"><b>${esc(x.text)}</b></span>
+                            ${bl(x)}
+                            <span class="badge ${ok ? 'ok' : 'wn'}" title="${ok ? 'Matched verbatim' : 'Fuzzy matched'}">${ok ? 'Verbatim match' : 'Inferred'}</span>
+                            ${evBtn(p0, u.text, x.text)}
+                        </div>`;
+                    }).join('')}
+                </div>`;
+            }
+            if (t == 'cos') {
+                const cos = d.course_outcomes || [];
+                if (!cos.length) return empty('file', 'No course outcomes extracted', 'Course outcomes (COs) were not found in this course section.');
+                return `<div class="row" style="margin-bottom:12px"><span class="mut"><b>${cos.length} Course Outcomes (COs)</b></span></div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                    ${cos.map(o => `<div class="card" style="padding:10px 14px;border:1px solid var(--bd)">
+                        <div class="row" style="justify-content:space-between;margin-bottom:6px">
+                            <div class="row" style="gap:8px">
+                                <b style="color:var(--pri)">${esc(o.id)}</b>
+                                ${bl(o)}
+                            </div>
+                            <div class="row" style="gap:6px">
+                                ${srcLnk(p0)}
+                                ${evBtn(p0, o.text, o.text)}
+                            </div>
+                        </div>
+                        <div style="line-height:1.6">${esc(o.text)}</div>
+                    </div>`).join('')}
+                </div>`;
+            }
+            if (t == 'pos') {
+                const pos = d.programme_outcomes || [], psos = d.programme_specific_outcomes || [];
+                if (!pos.length && !psos.length) return empty('file', 'No programme outcomes', 'Not printed in this course section.');
+                return `${pos.length ? `<h3 style="margin-bottom:10px">Programme Outcomes (POs)</h3><div style="display:flex;flex-direction:column;gap:8px">${pos.map(o => `<div class="card" style="padding:10px 14px;border:1px solid var(--bd)"><div class="row" style="justify-content:space-between;margin-bottom:4px"><b style="color:var(--pri)">${esc(o.id)}</b>${srcLnk(p0)}</div><div>${esc(o.text)}</div></div>`).join('')}</div>` : ''}
+                ${psos.length ? `<h3 style="margin-top:18px;margin-bottom:10px">Programme Specific Outcomes (PSOs)</h3><div style="display:flex;flex-direction:column;gap:8px">${psos.map(o => `<div class="card" style="padding:10px 14px;border:1px solid var(--bd)"><div class="row" style="justify-content:space-between;margin-bottom:4px"><b style="color:var(--pri)">${esc(o.id)}</b>${srcLnk(p0)}</div><div>${esc(o.text)}</div></div>`).join('')}</div>` : ''}`;
+            }
+            if (t == 'copo') {
+                const M = d.co_po_matrix || {}, cos = Object.keys(M), pos = [...new Set(cos.flatMap(k => Object.keys(M[k])))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+                const M2 = d.co_pso_matrix || {}, cos2 = Object.keys(M2), psos = [...new Set(cos2.flatMap(k => Object.keys(M2[k])))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+                if (!cos.length && !cos2.length) return empty('grid', 'No CO-PO mapping found', 'No matrix printed in this course section.');
+                let h = `<p class="mut" style="margin-bottom:8px">CO-PO mapping correlation values exactly as printed.</p>`;
+                if (cos.length) {
+                    h += `<div class="tw"><table class="mx"><thead><tr><th>CO-PO</th>${pos.map(x => `<th scope="col">${esc(x)}</th>`).join('')}</tr></thead><tbody>${cos.map(k => `<tr><th scope="row">${esc(k)}</th>${pos.map(x => { const v = M[k][x]; return `<td><button class="${v == null || v === '' ? 'z' : 'on'}" data-a="cell" data-c="${esc(k)}" data-p="${esc(x)}" data-v="${esc(v ?? '')}">${v == null || v === '' ? '—' : esc(v)}</button></td>` }).join('')}</tr>`).join('')}</tbody></table></div>`;
+                }
+                if (cos2.length) {
+                    h += `<h3 style="margin-top:16px;margin-bottom:8px">CO-PSO Matrix</h3><div class="tw"><table class="mx"><thead><tr><th>CO-PSO</th>${psos.map(x => `<th scope="col">${esc(x)}</th>`).join('')}</tr></thead><tbody>${cos2.map(k => `<tr><th scope="row">${esc(k)}</th>${psos.map(x => { const v = M2[k][x]; return `<td><button class="${v == null || v === '' ? 'z' : 'on'}" data-a="cell" data-c="${esc(k)}" data-p="${esc(x)}" data-v="${esc(v ?? '')}">${v == null || v === '' ? '—' : esc(v)}</button></td>` }).join('')}</tr>`).join('')}</tbody></table></div>`;
+                }
+                h += `<div class="src" id="cellinfo" style="margin-top:10px">Click any mapping cell to inspect its level and source.</div>`;
+                return h;
+            }
+            if (t == 'books') {
+                const B = d.books || [];
+                const renderBook = b => {
+                    const tx = [b.title, b.author, b.publisher, b.edition, b.year, b.isbn].filter(x => x !== '' && x != null).join(' · ');
+                    return `<div class="tr row" style="padding:8px 10px;background:var(--card);border:1px solid var(--bd);border-radius:8px;margin-bottom:6px">
+                        <span class="badge ${b.kind === 'text' ? 'ok' : 'in'}" style="margin-right:8px">${esc(b.type || (b.kind === 'text' ? 'Textbook' : 'Reference'))}</span>
+                        <span style="flex:1"><b>${esc(b.title || tx || b.text || '—')}</b><br><small class="mut">${esc([b.author, b.publisher, b.edition, b.year].filter(Boolean).join(' · ') || b.text || '')}</small></span>
+                        ${srcLnk(p0)}
+                        ${evBtn(p0, b.text || tx, '')}
+                    </div>`;
+                };
+                const texts = B.filter(b => b.kind === 'text' || (b.type && /text/i.test(b.type)));
+                const refs = B.filter(b => b.kind === 'reference' || (b.type && /ref|online|resource/i.test(b.type)));
+                if (!B.length) return empty('book', 'No books or references found', 'Not found in source.');
+                return `<h3>Text Books (${texts.length})</h3><div style="margin-top:8px">${texts.length ? texts.map(renderBook).join('') : '<p class="mut">None listed in source</p>'}</div>
+                <h3 style="margin-top:18px">Reference Books / Online Resources (${refs.length})</h3><div style="margin-top:8px">${refs.length ? refs.map(renderBook).join('') : '<p class="mut">None listed in source</p>'}</div>`;
+            }
+            if (t == 'val') {
+                const cs = chk({ ...S.cur.doc, courses: [c] }), bad = cs.filter(x => !x.ok);
+                return `<div class="tr row"><span class="badge ${bad.length ? 'wn' : 'ok'}">${cs.length - bad.length}/${cs.length} topics found verbatim in source unit text</span></div>
+                ${issuesOf({ ...S.cur.doc, courses: [c] }).map(i => `<div class="tr"><span class="badge wn">${i.cat}</span> <b>${esc(i.field)}</b><div class="mut">${esc(i.why)}</div></div>`).join('') || '<p class="mut" style="margin-top:12px">No open validation warnings for this course.</p>'}
+                ${(d.not_extracted || []).map(n => `<div class="tr"><span class="badge">Not extracted</span> ${esc(n)}</div>`).join('')}`;
+            }
+        }
+
+        /* ---------- 5f. REVIEW ---------- */
+        R.review = async () => {
+            crumb('Review Center'); skel(); const r = await getDoc('current'); const head = `<div class="ph"><div><h1>Review Center</h1></div></div>`; if (!r.ok) return set(head + errBox(r)); const doc = r.data;
+            if (!doc) return set(head + empty('shield', 'Nothing to review', 'Extract a syllabus first — flagged fields will collect here.', upBtn));
+            const rv = rev(doc.id), all = issuesOf(doc), open = all.filter(i => !rv[i.id]), cat = S.tab.rv || '', cats = ['Low confidence', 'Missing', 'Unreadable', 'Possible boundary issue', 'Source mismatch', 'Validation warning'];
+            set(`<div class="ph"><div><h1>Review Center</h1><p><b>${open.length} field${open.length == 1 ? '' : 's'} require attention</b> in <span class="mono">${esc(doc.filename)}</span></p></div><button class="btn" data-a="qexp" data-f="json">${I('down')}Export with review history</button></div>
+ <div class="tabs" role="tablist"><button role="tab" aria-selected="${!cat}" data-a="tab" data-g="rv" data-k="">All (${all.length})</button>${cats.map(k => `<button role="tab" aria-selected="${cat == k}" data-a="tab" data-g="rv" data-k="${k}">${k} (${all.filter(i => i.cat == k).length})</button>`).join('')}</div>
+ ${all.length ? all.filter(i => !cat || i.cat == cat).map(i => {
+                const v = rv[i.id], ci = doc.courses.findIndex(c => dkey(c) == i.course); return `<div class="card" style="margin-bottom:10px"><div class="row"><span class="badge wn">${i.cat}</span><b>${esc(i.course)}</b><span class="mono mut">${esc(i.field)}</span><span class="sp"></span>${v ? `<span class="badge ${v.s == 'accepted' ? 'ok' : 'in'}">${v.s}</span>` : ''}</div>
+ <div class="ev2" style="margin-top:8px"><div><small class="mut">Original extracted value (never overwritten)</small><div class="src">${i.val === '' ? '(empty)' : esc(i.val)}</div></div><div><small class="mut">Human corrected value</small><div class="src">${v?.corrected != null ? esc(v.corrected) : '—'}</div></div></div><p class="mut" style="margin:8px 0">${esc(i.why)} · Source page ${i.page ?? '—'}</p>
+ <div class="row"><a class="btn sm" href="#/course/${doc.id}/${ci}" data-a="viewsrc" data-p="${i.page || ''}">${I('eye', 14)}View source</a><button class="btn sm" data-a="acc" data-id="${esc(i.id)}">Accept</button><button class="btn sm" data-a="cor" data-id="${esc(i.id)}">${I('pen', 14)}Correct</button>${v ? `<small class="mut">Audit: ${v.s} ${ago(v.at)}</small>` : ''}</div></div>`
+            }).join('') : empty('ok', 'No issues flagged', 'Nothing needs attention right now.')}`)
+        };
+
+        /* ---------- 5g. EXPORTS ---------- */
+        R.exports = async () => {
+            crumb('Exports'); skel(); const r = await getDoc('current'); const head = `<div class="ph"><div><h1>Export Center</h1><p>Export the validated result with its provenance.</p></div></div>`; if (!r.ok) return set(head + errBox(r)); const doc = r.data; if (!doc) return set(head + empty('down', 'Nothing to export yet', 'Extract a syllabus first.', upBtn));
+            const H = ls('siqExp', []); set(head + `<div class="g g2"><div class="card"><h2>Generate export · <span class="mono">${esc(doc.filename)}</span></h2><b>Format</b><div class="opts" style="grid-template-columns:repeat(4,1fr);margin:8px 0 16px">${['JSON', 'Excel', 'CSV', 'PDF Report'].map((f, i) => `<label class="opt"><input type="radio" name="fmt" value="${['json', 'xlsx', 'csv', 'pdf'][i]}" ${i ? '' : 'checked'}>${f}</label>`).join('')}</div>
+ <div class="chk" style="margin-bottom:16px"><label><input type="radio" name="scope" value="all" checked>Entire document</label><label><input type="radio" name="scope" value="sel">Course selection (${S.sel.size} selected)</label><label><input type="checkbox" id="xv">Only validated fields</label><label><input type="checkbox" id="xs" checked>Include source pages</label><label><input type="checkbox" id="xp" checked>Include provenance</label><label><input type="checkbox" id="xr" checked>Include review history</label></div><button class="btn pri" data-a="gen">Generate Export</button></div>
+ <div class="card"><h2>Export history</h2>${H.length ? H.map(h => `<div class="tr"><b>${esc(h.f)}</b> <span class="badge ${h.ok ? 'ok' : 'er'}">${h.ok ? 'Done' : 'Failed'}</span><div class="mut">${esc(h.n)} · ${ago(h.at)}</div></div>`).join('') : '<p class="mut">No exports yet.</p>'}</div></div>`)
+        };
+        function build(doc, o) {
+            let C = doc.courses.map((c, i) => ({ c, i })); if (o.scope == 'sel' && S.sel.size) C = C.filter(x => S.sel.has(x.i)); const rv = rev(doc.id), bad = new Set(chk(doc).filter(x => !x.ok).map(x => x.k + x.t.id));
+            return { document: doc.filename, course_count: C.length, courses: C.map(({ c }) => { const d = detOf(doc, c), o2 = { code: c.code, title: c.title, page: c.page }; if (o.src && d) o2.pages = d.course.pages; if (d) { const dd = JSON.parse(JSON.stringify(d)); if (o.val) dd.units?.forEach(u => u.topics = u.topics.filter(t => !bad.has(dkey(c) + t.id))); o2.detail = dd } return o2 }), ...(o.rev ? { review_history: rv } : {}), ...(o.prov ? { provenance: 'source pages listed per course; extraction is AI-generated and unverified beyond client checks' } : {}) }
+        }
+        async function gen() {
+            const doc = S.doc, f = $('input[name=fmt]:checked').value, o = { scope: $('input[name=scope]:checked').value, val: $('#xv').checked, src: $('#xs').checked, prov: $('#xp').checked, rev: $('#xr').checked }; let blob, name = doc.filename.replace(/\.pdf$/i, '') + '.' + (f == 'xlsx' ? 'xlsx' : f), ok = true;
+            if (f == 'json') blob = new Blob([JSON.stringify(build(doc, o), null, 2)], { type: 'application/json' });
+            else if (f == 'csv') { const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`; blob = new Blob(['\ufeff' + ['code,title,page,category,credits', '', ...build(doc, o).courses.map(c => [c.code, c.title, c.page, doc.courses.find(x => dkey(x) == (c.code || c.title))?.category, doc.courses.find(x => dkey(x) == (c.code || c.title))?.credits].map(q).join(','))].join('\n')], { type: 'text/csv' }) }
+            else { const r = await API.exportDoc(doc.id, { format: f, scope: o.scope, validated_only: o.val, include_source: o.src, include_provenance: o.prov, include_review: o.rev }); ok = r.ok; if (ok) blob = r.data; else toast('Backend export failed: ' + (r.err || '').slice(0, 80), 'er') }
+            sv('siqExp', [{ f: f.toUpperCase(), n: name, at: Date.now(), ok }, ...ls('siqExp', [])].slice(0, 15)); if (ok) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); toast('Export ready: ' + name) } R.exports()
+        }
+
+        /* ---------- 5h. SETTINGS ---------- */
+        R.settings = async tab => {
+            crumb('Settings'); const T = ['General', 'Extraction', 'AI Model', 'OCR', 'Validation', 'Database', 'API', 'Appearance'], t = (tab || 'general').toLowerCase().replace(' ', '-'), H = S.health || {};
+            const row = (l, v) => `<div class="tr row"><span class="sp">${l}</span>${v}</div>`, ss = {
+                general: row('Workspace', 'My Workspace') + row('Default extraction mode', `<b>${esc(S.set.mode)}</b>`), extraction: row('Options', `<span class="mut">Configured per run on the Extract page</span>`) + row('Fidelity', '<span class="badge ok">Source text preserved exactly</span>'),
+                'ai-model': row('Provider', 'NVIDIA NIM') + row('Model', esc(S.health?.model || 'meta/llama-3.2-11b-vision-instruct')) + row('Endpoint', '<span class="mut">Configured through backend</span>') + row('API key', '<span class="mut">Never stored or shown in the frontend</span>'),
+                ocr: row('Automatic OCR fallback', `<span class="badge">${S.set.ocr ? 'On' : 'Off'}</span>`) + row('Engine status', H.ocr ? `<span class="badge ok">${esc(H.ocr)}</span>` : '<span class="badge">Unknown</span>'),
+                validation: row('“Verified” means', '<span class="mut">Topic wording found verbatim in its unit text</span>') + row('Bloom levels', '<span class="mut">Shown as printed / inferred</span>'),
+                database: row('MongoDB', H.database ? `<span class="badge ok">${esc(H.database)}</span>` : `<span class="badge ${apiOk ? '' : 'er'}">${apiOk ? 'Unknown' : 'Disconnected'}</span>`),
+                api: `<div class="tr row"><label class="sp" for="au">Backend URL</label><input type="text" id="au" value="${esc(CFG.api)}" style="width:280px"><button class="btn" data-a="saveapi">Save</button></div>` + row('FastAPI backend', `<span class="badge ${apiOk ? 'ok' : 'er'}">${apiOk ? 'Connected' : 'Offline'}</span>`) + row('Latency', `<b>${S.ms ? S.ms + ' ms' : '—'}</b> <button class="btn sm" data-a="repi">Test</button>`) + `<label class="tr row" style="cursor:pointer"><input type="checkbox" id="mk" ${CFG.mock ? 'checked' : ''} data-a="mock"><span><b>Development mock mode</b><br><span class="mut">Serves clearly-labelled sample data instead of calling the backend. Never enable in production.</span></span></label>`,
+                appearance: row('Theme', '<button class="btn" data-a="theme">Toggle light / dark</button>') + row('Sidebar', '<button class="btn" data-a="collapse">Collapse / expand</button>')
+            };
+            set(`<div class="ph"><div><h1>Settings</h1></div></div><div class="tabs" role="tablist">${T.map(x => { const k = x.toLowerCase().replace(' ', '-'); return `<a role="tab" aria-selected="${t == k}" href="#/settings/${k}" class="btn gh" style="border-radius:0;border-bottom:2px solid ${t == k ? 'var(--pri)' : 'transparent'};color:${t == k ? 'var(--pri)' : 'var(--mut)'}">${x}</a>` }).join('')}</div><div class="card" style="max-width:760px">${ss[t] || ss.general}</div>`)
+        };
+
+        /* ---------- 6. ACTIONS + ROUTER ---------- */
+        const A = {
+            theme() { const n = document.documentElement.dataset.t == 'dark' ? 'light' : 'dark'; document.documentElement.dataset.t = n; localStorage.siqTheme = n },
+            collapse() { $('#app').classList.toggle('col') }, menu() { $('#app').classList.toggle('open') }, bell() { toast('No notifications') }, user() { toast('Signed in as User · My Workspace') }, goapi() { location.hash = '#/settings/api' },
+            details(e) { modal(`<h2>Error details</h2><div class="src">${esc(e.dataset.d || 'No details returned')}</div><button class="btn" data-a="mclose" style="margin-top:12px">Close</button>`) },
+            retry() { S.err = null; location.hash = '#/extract'; },
+            back() { S.err = null; location.hash = '#/extract'; },
+            browse(e, ev) { ev.stopPropagation(); $('#fi').click() }, rmfile() { S.file = null; route() }, start,
+            tab(e) { S.tab[e.dataset.g == 'res' ? 'res' : e.dataset.g == 'cd' ? 'cd' : 'rv'] = e.dataset.k; route() }, ptype(e) { },
+            sel(e) { const i = +e.dataset.i; e.checked ? S.sel.add(i) : S.sel.delete(i); drawTable() }, selall(e) { $$('[data-a=sel]').forEach(c => { c.checked = e.checked; e.checked ? S.sel.add(+c.dataset.i) : S.sel.delete(+c.dataset.i) }); drawTable() }, pg(e) { S.f.pg += +e.dataset.d; drawTable() },
+            bulk() { if (!S.sel.size) return toast('Select courses in the table first', 'er'); location.hash = '#/exports' }, qexp(e) { S.tab.res = S.tab.res; const f = e.dataset.f; if (f == 'json') { const b = new Blob([JSON.stringify(build(S.doc, { rev: 1, src: 1, prov: 1 }), null, 2)], { type: 'application/json' }), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = S.doc.filename + '.json'; a.click() } else location.hash = '#/exports' }, gen,
+            goto(e) { S.pg = +e.dataset.p; if ($('#pv')) showPage(S.pg); else toast('Open a course to preview page ' + e.dataset.p) }, pp(e) { const n = Math.max(1, S.pg + +e.dataset.d); showPage(n) }, zoom(e) { S.zoom = e.dataset.d == 0 ? 1 : Math.max(.4, S.zoom + +e.dataset.d); showPage(S.pg) }, fs() { $('#pv').requestFullscreen?.() },
+            cprev() { go(-1) }, cnext() { go(1) }, viewsrc(e) { S.pg = +e.dataset.p || 1 },
+            cell(e) { $$('.mx button').forEach(b => b.classList.remove('on')); e.classList.add('on'); $('#cellinfo').innerHTML = `<b>${esc(e.dataset.c)} × ${esc(e.dataset.p)}</b>\nOriginal: “${esc(e.dataset.v) || '(not mapped in source)'}”\nSource: page ${S.cur.d.course.pages?.[0] ?? '—'}` },
+            evid(e) {
+                const p = +e.dataset.p || null, x = e.dataset.x, h = e.dataset.h, i = h ? x.indexOf(h) : -1; modal(`<div class="row"><h2 class="sp">Source evidence</h2><button class="ib" data-a="mclose" aria-label="Close">${I('x')}</button></div><div class="ev2" style="margin-top:12px"><div class="pdf" style="border-radius:10px;min-height:260px">${p ? `<canvas id="ec" data-p="${p}" data-w="380"></canvas><div class="mut">Page ${p}</div>` : '<p class="mut">No page recorded</p>'}</div><div><small class="mut">Exact source text as extracted (not reworded)</small><div class="src">${i >= 0 ? esc(x.slice(0, i)) + '<mark>' + esc(h) + '</mark>' + esc(x.slice(i + h.length)) : esc(x)}</div><p class="mut" style="margin-top:8px;font-size:12.5px">${h && i < 0 ? 'The highlighted text was not found verbatim in this source — check the PDF.' : 'Region coordinates are not provided by the backend, so the text is highlighted instead.'}</p></div></div>`);
+                pdfFor(S.doc).then(d => { const c = $('#ec'); d ? draw(d, p, c, 380) : c && (c.outerHTML = '<p class="mut">PDF preview available in the upload session only.</p>') })
+            },
+            acc(e) { const r = rev(S.doc.id); r[e.dataset.id] = { s: 'accepted', at: Date.now() }; saveRev(S.doc.id, r); toast('Accepted — original value kept'); route() },
+            cor(e) { modal(`<h2>Correct value</h2><p class="mut">Your correction is stored beside the original, which is never overwritten.</p><textarea id="cv" aria-label="Corrected value"></textarea><div class="row" style="margin-top:12px"><button class="btn pri" data-a="savecor" data-id="${esc(e.dataset.id)}">Save correction</button><button class="btn" data-a="mclose">Cancel</button></div>`) },
+            expandAllUnits() { $$('.unit-card').forEach(d => d.open = true) },
+            collapseAllUnits() { $$('.unit-card').forEach(d => d.open = false) },
+            jumpAll() {
+                const total = S.cur?.doc?.pages || 100;
+                modal(`<h2>Jump to Page</h2><p class="mut">Enter any page number between 1 and ${total}:</p>
+                <div class="row" style="margin-top:12px;gap:8px">
+                    <input type="number" id="jumpPageInput" value="${S.pg || 1}" min="1" max="${total}" style="width:120px" autofocus>
+                    <button class="btn pri" data-a="doJump">Go to Page</button>
+                    <button class="btn" data-a="mclose">Cancel</button>
+                </div>`);
+            },
+            doJump() {
+                const inp = $('#jumpPageInput');
+                if (inp && inp.value) {
+                    showPage(+inp.value);
+                    modal('');
+                }
+            },
+            async extractCourse(e) {
+                const docId = e.dataset.id || S.doc?.id, code = e.dataset.code || '', title = e.dataset.title || '';
+                const force = e.dataset.force === '1' || !!e.dataset.force;
+                const courseQuery = code ? `${code} | ${title}` : title;
+                e.disabled = true;
+                e.innerHTML = `<span class="skel" style="display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:6px"></span> Extracting all pages & syllabus with AI…`;
+                toast(`Extracting detailed syllabus for ${code || title}...`);
+                const r = await API.extractCourse(docId, courseQuery, S.file, force);
+                if (!r.ok) {
+                    toast('Extraction failed: ' + (r.err || 'error'), 'er');
+                    e.disabled = false;
+                    e.innerHTML = I('up') + ' Extract all units & topics for this course';
+                    return;
+                }
+                const detailData = r.data;
+                if (S.doc) {
+                    if (!S.doc.details) S.doc.details = {};
+                    const key = code || title;
+                    S.doc.details[key] = detailData;
+                    if (code) S.doc.details[code] = detailData;
+                    if (title) S.doc.details[title] = detailData;
+                    const combo = `${code} | ${title}`.trim();
+                    if (combo) S.doc.details[combo] = detailData;
+
+                    const cInfo = detailData.course || {};
+                    if (S.cur?.c) {
+                        if (cInfo.pages?.length) {
+                            S.cur.c.pages = cInfo.pages;
+                            S.cur.c.page = cInfo.pages[0];
+                            S.cur.pgs = cInfo.pages;
+                            S.pg = cInfo.pages[0];
+                        }
+                        if (cInfo.credits !== undefined) S.cur.c.credits = cInfo.credits;
+                        if (cInfo.category) S.cur.c.category = cInfo.category;
+                    }
+                    if (S.cur) S.cur.d = detailData;
+                }
+                toast('Course syllabus extracted with all units, topics, outcomes & books!');
+                route();
+            },
+            async extractAllCourses(e) {
+                const docId = S.doc?.id;
+                if (!docId) return toast('No document selected', 'er');
+                e.disabled = true; e.textContent = 'Extracting all courses in background…';
+                toast(`Starting full extraction of all ${S.doc.courses.length} courses...`);
+                const r = await API.extractAllCourses(docId);
+                if (!r.ok) { e.disabled = false; e.textContent = `Extract All ${S.doc.courses.length} Courses`; return toast('Bulk extraction failed: ' + (r.err || 'error'), 'er'); }
+                toast(`All ${S.doc.courses.length} courses successfully extracted with full units & topics!`);
+                S.doc = null; // force reload doc details
+                route();
+            },
+            saveapi() { localStorage.siqApi = $('#au').value.trim(); S.docs = null; ping(); toast('Backend URL saved') }, repi() { ping().then(() => route()) }, mock(e) { localStorage.siqMock = e.checked ? '1' : '0'; location.reload() }
+        };
+        function go(d) { const { doc } = S.cur, i = +location.hash.split('/')[3] + d; if (doc.courses[i]) location.hash = `#/course/${doc.id}/${i}` }
+        document.addEventListener('click', e => { const a = e.target.closest('[data-a]'); if (a && A[a.dataset.a]) { if (a.tagName == 'A' && a.dataset.a != 'viewsrc') e.preventDefault(); A[a.dataset.a](a, e) } });
+        document.addEventListener('change', e => { const t = e.target, s = S.set; if (t.name == 'mode') { s.mode = t.value; $('#cw').style.display = t.value == 'course' ? '' : 'none'; sv('siqSet', s) } else if (t.dataset.p && t.type == 'checkbox') { s.proc[t.dataset.p] = t.checked } else if (t.id == 'ocr') s.ocr = t.checked; else if (t.dataset.adv) s.adv[t.dataset.adv] = +t.value; else if (t.dataset.f && t.tagName == 'SELECT') { S.f[t.dataset.f] = t.value; S.f.pg = 0; drawTable() } else if (t.dataset.a == 'ptype') { S.tab.pt = t.value; pagesView(S.doc) } sv('siqSet', s) });
+        document.addEventListener('input', e => { const t = e.target; if (t.dataset.f && t.type == 'text') { S.f.q = t.value; S.f.pg = 0; drawTable() } if (t.id == 'cc') S.set.course = t.value });
+        document.addEventListener('keydown', async e => {
+            const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+            if (e.key == 'Escape') modal(''); if (typing && e.key == 'Enter' && document.activeElement.id == 'pn') showPage(+document.activeElement.value || 1);
+            if (typing && e.key == 'Enter' && document.activeElement.id == 'ps') { const q = document.activeElement.value.toLowerCase(), p = await pdfFor(S.cur.doc); if (!p || !q) return toast('PDF search needs the uploaded PDF', 'er'); for (let n = 1; n <= p.numPages; n++) { const t = (await (await p.getPage(n)).getTextContent()).items.map(x => x.str).join(' ').toLowerCase(); if (t.includes(q)) return showPage(n) } toast('No match found', 'er') }
+            if (typing) return; if (e.key == '/') { e.preventDefault(); $('#gq').focus() } if (e.key == '[') A.collapse()
+        });
+        function route() {
+            try {
+                const hash = window.location.hash || '';
+                const [p, ...a] = (hash.slice(2) || 'dashboard').split('/');
+                S.tok++;
+                if (S.timer) clearInterval(S.timer);
+                if ($('#app')) $('#app').classList.remove('open');
+                shell();
+                if ($('#view')) $('#view').scrollTop = 0;
+                if (p !== 'course') S.pg = null;
+                const viewFn = R[p] || R.dashboard;
+                Promise.resolve(viewFn(...a.map(decodeURIComponent))).catch(err => {
+                    console.error('Route error:', err);
+                    set(errBox({ err: String(err) }));
+                });
+            } catch (err) {
+                console.error('Route sync error:', err);
+                set(errBox({ err: String(err) }));
+            }
+        }
+        try {
+            document.documentElement.dataset.t = (localStorage && localStorage.siqTheme) || (window.matchMedia && window.matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+        } catch (e) {
+            document.documentElement.dataset.t = 'light';
+        }
+        window.addEventListener('hashchange', route);
+        window.addEventListener('DOMContentLoaded', () => { route(); ping(); });
+        route();
+        ping().then(() => { if (!/^#\/(processing|extract)/.test(window.location.hash)) route(); });
+        setInterval(ping, 30000);
+    </script>
+</body>
+
+</html>
