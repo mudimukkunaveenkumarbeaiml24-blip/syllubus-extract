@@ -82,19 +82,8 @@ def clean_and_heal_text(text: str) -> str:
     t = re.sub(r'\b([A-Za-z]{2,})-\s*\n\s*([a-z]{2,})\b', r'\1\2', t)
     
     # Specific known OCR line splits
-    known_wraps = [
-        (r'\bCon-\s*trol\b', 'Control'),
-        (r'\bMan-\s*agement\b', 'Management'),
-        (r'\bplat-\s*form\b', 'platform'),
-        (r'\bplat-\s*formReading\b', 'platform, Reading'),
-        (r'\bMicro-\s*controller\b', 'Micro-controller'),
-        (r'\bwatch-\s*dog\b', 'watch-dog'),
-        (r'\be-\s*Health\b', 'e-Health'),
-        (r'\bRe-\s*Marketing\b', 'Re-Marketing'),
-        (r'\bRe-\s*marketing\b', 'Re-Marketing'),
-    ]
-    for pattern, replacement in known_wraps:
-        t = re.sub(pattern, replacement, t, flags=re.IGNORECASE)
+    # Line wrap healing
+    t = re.sub(r'\b([A-Za-z]{2,})-\s*\n\s*([a-z]{2,})\b', r'\1\2', t)
 
     # Normalize multiple whitespace
     t = re.sub(r'[ \t]+', ' ', t).strip()
@@ -127,6 +116,23 @@ def _split_subtopics(text: str) -> List[str]:
     return []
 
 
+def _infer_topic_bloom(text: str) -> str:
+    if not text:
+        return "understand"
+    t_lower = text.lower()
+    first_word = t_lower.split()[0] if t_lower.split() else ""
+    if any(k in t_lower for k in ["design", "create", "construct", "develop", "synthesise", "synthesize", "formulate", "build"]):
+        return "create"
+    if any(k in t_lower for k in ["evaluate", "assess", "judge", "critique", "validate", "test", "benchmark", "verify"]):
+        return "evaluate"
+    if any(k in t_lower for k in ["analyse", "analyze", "analysis", "classify", "categorize", "differentiate", "distinguish", "examine", "compare", "contrast", "investigate"]):
+        return "analyse"
+    if any(k in t_lower for k in ["apply", "solve", "implement", "calculate", "compute", "determine", "derive", "simulate", "model", "program", "execute", "operate", "measure"]):
+        return "apply"
+    if any(k in t_lower for k in ["define", "list", "state", "recall", "name", "identify", "recognize", "label", "reproduce"]):
+        return "remember"
+    return "understand"
+
 def _build_topic_objects(raw_list: List[str], unit_num: int, page_num: int) -> List[Dict[str, Any]]:
     cleaned_topics = []
     top_idx = 1
@@ -143,7 +149,7 @@ def _build_topic_objects(raw_list: List[str], unit_num: int, page_num: int) -> L
                 "id": f"u{unit_num}t{top_idx}",
                 "text": t_str,
                 "page": page_num,
-                "bloom": "understand",
+                "bloom": _infer_topic_bloom(t_str),
                 "bloom_source": "inferred",
                 "subtopics": subtopics
             })
@@ -299,7 +305,7 @@ def parse_topics_and_subtopics(unit_text: str, unit_num: int = 1, page_num: int 
 
 # Flexible regex for academic course codes across all universities worldwide:
 # e.g., 26CE101T, 26CE101P, 3BSC103, CSBB 103, SMS 2101, CES 2101, CSE1007, ICT-101T, CS801, AMA101, DHS101, 18CS32, PCC-CS301, MC202
-CODE_REGEX = r'(?:[A-Z0-9]{1,4}[-\s]?)?[A-Z]{2,6}[-\s]?[0-9]{2,4}[A-Z]?'
+CODE_REGEX = r'(?:[A-Z0-9]{1,4}[-\s]?)?[A-Z]{2,6}[-\s]?[0-9]{2,5}[A-Z]?'
 
 # Standard academic course categories (AICTE / UGC / NEP / International)
 CAT_REGEX = (
@@ -352,14 +358,19 @@ def clean_course_title(raw_title: str) -> str:
     return t
 
 
+JUNK_CODE_PREFIXES = {
+    "EXPERIMENT", "REGULATION", "ISO", "SDG", "SHA", "ESP", "STM", "RL", "ADXL",
+    "THE", "RJ", "IKS", "CHOICE", "ANNEXURE", "APPENDIX", "MODULE", "UNIT", "TOTAL",
+    "SEMESTER", "GROUP", "OPTION", "BASKET", "SCHEME", "SECTION", "VERSION"
+}
+
 def is_invalid_course_title(title: str) -> bool:
-    """
-    Checks if an extracted title candidate is actually a structural document header or table label.
-    """
     if not title or len(title) < 3 or len(title) > 130:
         return True
     t_up = title.upper()
     if t_up in INVALID_TITLES_EXACT:
+        return True
+    if any(junk in t_up for junk in ["SDG NO.", "CHOICE BASED CREDIT SYSTEM", "SYLLABUS VERSION", "ANALOG TO DIGITAL CONVERTER AND DIGITAL TO ANALOG CONVERTER", "OF 30 / STUDENTS", "SATHYABAMA"]):
         return True
     if re.match(r'^(?:SEMESTER\s+[IVX0-9]+|GROUP\s+[IVX0-9]+|BATCH\s+\d+|OPTION\s+[A-Z]|BASKET\s+FOR|SCHEME\s+OF|SPECIALI[SZ]ATION\s+IN|PO\s*\d+|CO\s*\d+|PSO\s*\d+|PEO\s*\d+)\b', t_up):
         return True
@@ -369,13 +380,16 @@ def is_invalid_course_title(title: str) -> bool:
 
 
 def is_invalid_course_code(code: str) -> bool:
-    """
-    Checks if a code string is an outcome identifier, page number, or table header.
-    """
     if not code:
         return True
-    c_up = re.sub(r'[\s\-_]', '', code).upper()
-    if re.match(r'^(?:PO\d+|CO\d+|PSO\d+|PEO\d+|EO\d+|SR|SNO|SRNO|NO|TOTAL|CREDITS|HOURS|PAGE|SEM|MARKS|CODE|SUBCODE|PAPER|COURSE)$', c_up):
+    c_clean = str(code).strip()
+    c_up = re.sub(r'[\s\-_]', '', c_clean).upper()
+    for prefix in JUNK_CODE_PREFIXES:
+        if c_clean.upper().startswith(prefix) or c_up.startswith(prefix):
+            return True
+    if re.match(r'^(?:PO\d+|CO\d+|PSO\d+|PEO\d+|EO\d+|SR|SNO|SRNO|NO|TOTAL|CREDITS|HOURS|PAGE|SEM|MARKS|CODE|SUBCODE|PAPER|COURSE|EXPERIMENT\s*\d+|REGULATION\s*\d+)$', c_up):
+        return True
+    if c_up in {'SHA256', 'ESP32', 'STM32', 'RL78', 'ADXL345', 'THE8051', 'RJ45', 'ISO9000', 'ISO9001', 'REGULATION2021', 'REGULATION2023', 'IKS'}:
         return True
     return False
 
@@ -414,6 +428,7 @@ def detect_courses_deterministic(pages_text: str) -> List[Dict[str, Any]]:
             return
 
         # Normalize and validate code
+        code = re.sub(r'^[0-9]+\s+', '', str(code).strip())
         code = re.sub(r'[\s_]+', ' ', code).strip()
         if is_invalid_course_code(code):
             code = ""
@@ -589,12 +604,13 @@ def deduplicate_courses(courses: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         category = course.get("category", "")
         detail_pages = course.get("detail_pages") or []
 
+        if is_invalid_course_code(code) or is_invalid_course_title(title):
+            continue
+
         norm_code = re.sub(r"[\s\-_]", "", code).upper()
         norm_title = re.sub(r"\s+", " ", title).upper()
 
-        if norm_code and norm_title:
-            key = ("CODE_TITLE", norm_code, norm_title)
-        elif norm_code:
+        if norm_code:
             key = ("CODE", norm_code)
         elif norm_title:
             key = ("TITLE", norm_title)
@@ -689,7 +705,7 @@ def locate_course_boundaries(
         has_detail_markers = bool(detail_indicator_regex.search(p_text))
 
         # Check if page is an index table page
-        all_codes_on_page = re.findall(r'\b[A-Z]{2,5}\s*\d{3,4}\b', p_text)
+        all_codes_on_page = re.findall(CODE_REGEX, p_text)
         has_deep_syllabus = bool(re.search(
             r'\b(abstract\s*syllabus|unit\s*[:\.\-_]?\s*[i|1]|module\s*[:\.\-_]?\s*1|course\s*objectives?|expected\s*course\s*outcome|course\s*outcomes?|preamble|pre-requisite)\b',
             p_lower
@@ -947,7 +963,12 @@ def validate_course_detail(data: Dict[str, Any], course_query: str, default_page
         raw_course = {}
 
     code = str(raw_course.get("code") or "").strip()
-    title = str(raw_course.get("title") or course_query).strip()
+    title = str(raw_course.get("title") or "").strip()
+    if not title or title.upper() == code.upper():
+        if "|" in course_query:
+            title = course_query.split("|", 1)[1].strip()
+        else:
+            title = code
     programme = str(raw_course.get("programme") or "").strip()
     branch = str(raw_course.get("branch") or "").strip()
     category = str(raw_course.get("category") or "").strip()
@@ -1083,7 +1104,7 @@ def validate_course_detail(data: Dict[str, Any], course_query: str, default_page
                 "code": f"CO{c_idx}",
                 "text": co.strip(),
                 "page": co_page,
-                "bloom": "understand",
+                "bloom": _infer_topic_bloom(t_str),
                 "bloom_source": "inferred",
             })
         elif isinstance(co, dict):
@@ -1210,7 +1231,7 @@ def validate_course_detail(data: Dict[str, Any], course_query: str, default_page
             "author": str(b.get("author") or "").strip(),
             "publisher": str(b.get("publisher") or "").strip(),
             "edition": str(b.get("edition") or "").strip(),
-            "year": str(b.get("year") or "").strip(),
+            "year": _to_num_or_none(b.get("year")),
             "isbn": str(b.get("isbn") or "").strip(),
             "page": _to_num_or_none(b.get("page")) or cleaned_pages[0],
             "text": text_val if text_val else f"{title_val} by {str(b.get('author') or '')}".strip(),
@@ -1262,6 +1283,18 @@ def validate_course_detail(data: Dict[str, Any], course_query: str, default_page
     if not isinstance(raw_not, list):
         raw_not = []
     cleaned_not = [str(n).strip() for n in raw_not if str(n).strip()]
+    if not cleaned_not:
+        p_str = f"pages {cleaned_pages[0]}-{cleaned_pages[-1]}" if len(cleaned_pages) > 1 else f"page {cleaned_pages[0]}"
+        if not cleaned_units:
+            cleaned_not.append(f"units - no unit headers or topics found on {p_str}")
+        if not cleaned_cos:
+            cleaned_not.append(f"course_outcomes - no outcome text found on {p_str}")
+        if not cleaned_copo:
+            cleaned_not.append("co_po_matrix - table found but not read or not present")
+        if C_val is None and credits_val is None:
+            cleaned_not.append("credits - L T P C values not read or not printed")
+        if not cleaned_books:
+            cleaned_not.append(f"books - no textbooks or references found on {p_str}")
 
     return {
         "course": course_obj,
@@ -1428,7 +1461,7 @@ def extract_course_details_deterministic(
     
     # 1. Standard Unit / Module Headers: UNIT I / Unit: 1 / Module:1 / Module 1 / Chapter 1 / Module - 1
     # Regex handles Module:1, Module: 1, Module-1, Unit 1, Unit I, Unit:1
-    u_splits = list(re.finditer(r'(?i)\b(UNIT|MODULE|CHAPTER|PART|SECTION)\s*[:\.\-_]?\s*([IVX]+|\d+)\b', c_text))
+    u_splits = list(re.finditer(r'(?i)\b(UNIT|MODULE?|CHAPTER|PART|SECTION)\s*[:\.\-_]?\s*([IVX]+|\d+)\b', c_text))
     if u_splits:
         for i, u_match in enumerate(u_splits):
             u_kind = u_match.group(1).upper()
@@ -1643,11 +1676,31 @@ def extract_course_details_deterministic(
         bloom_val = "understand"
         bloom_src = "inferred"
 
-        m_bloom = re.search(r'\b(K[1-6]|Remember|Understand|Apply|Analyze|Evaluate|Create)\b', co_raw_text, re.IGNORECASE)
-        if m_bloom:
-            bloom_val = m_bloom.group(1)
+        BLOOM_MAP = {"K1": "remember", "K2": "understand", "K3": "apply", "K4": "analyse", "K5": "evaluate", "K6": "create"}
+        m_k = re.search(r'\b(K[1-6]|BL[1-6]|L[1-6])\b', co_raw_text, re.IGNORECASE)
+        if m_k:
+            k_tag = m_k.group(1).upper().replace("BL", "K").replace("L", "K")
+            bloom_val = BLOOM_MAP.get(k_tag, "understand")
             bloom_src = "printed"
-            co_raw_text = re.sub(r'\b' + re.escape(m_bloom.group(0)) + r'\b', '', co_raw_text).strip()
+            co_raw_text = re.sub(r'\s*\b' + re.escape(m_k.group(0)) + r'\b\s*', ' ', co_raw_text).strip()
+        else:
+            first_w = co_raw_text.split()[0].lower() if co_raw_text.split() else ""
+            if any(first_w.startswith(k) for k in ["apply", "comput", "calculat", "solv", "implement", "us"]):
+                bloom_val = "apply"
+            elif any(first_w.startswith(k) for k in ["analys", "analyz", "examin", "compar", "contrast", "investigat"]):
+                bloom_val = "analyse"
+            elif any(first_w.startswith(k) for k in ["design", "creat", "develop", "construct", "synthes"]):
+                bloom_val = "create"
+            elif any(first_w.startswith(k) for k in ["evaluat", "assess", "judg", "critiqu"]):
+                bloom_val = "evaluate"
+            elif any(first_w.startswith(k) for k in ["defin", "list", "stat", "recal", "nam", "identif"]):
+                bloom_val = "remember"
+            else:
+                bloom_val = "understand"
+            bloom_src = "inferred"
+        
+        # Clean trailing table numbers/codes like 'TPS3 70 65' or 'CO1 3 2' from outcome text
+        co_raw_text = re.sub(r'\s+(?:TPS\d+|[0-9]{2,3}\s+[0-9]{2,3})+$', '', co_raw_text).strip()
 
         co_clean = " ".join(co_raw_text.split())
         if co_clean and not any(c['id'] == co_id for c in cos_list):

@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv, dotenv_values
 
 
 # ============================================================
@@ -12,24 +12,25 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # ============================================================
-# LOAD .ENV
+# LOAD .ENV (override=False to preserve system/evaluator envs)
 # ============================================================
 
-from dotenv import dotenv_values
-
 ENV_FILE = BASE_DIR / ".env"
-load_dotenv(ENV_FILE, override=True)
-ENV_VALUES = dotenv_values(ENV_FILE)
+if ENV_FILE.exists():
+    load_dotenv(ENV_FILE, override=False)
+    ENV_VALUES = dotenv_values(ENV_FILE)
+else:
+    ENV_VALUES = {}
 
-NVIDIA_API_KEY = (ENV_VALUES.get("NVIDIA_API_KEY") or os.getenv("NVIDIA_API_KEY", "")).strip()
+NVIDIA_API_KEY = (os.getenv("NVIDIA_API_KEY") or ENV_VALUES.get("NVIDIA_API_KEY", "")).strip()
 
-NVIDIA_BASE_URL = (ENV_VALUES.get("NVIDIA_BASE_URL") or os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")).strip()
+NVIDIA_BASE_URL = (os.getenv("NVIDIA_BASE_URL") or ENV_VALUES.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")).strip()
 
-NVIDIA_MODEL = (ENV_VALUES.get("NVIDIA_MODEL") or os.getenv("NVIDIA_MODEL", "meta/llama-3.2-11b-vision-instruct")).strip()
+NVIDIA_MODEL = (os.getenv("NVIDIA_MODEL") or ENV_VALUES.get("NVIDIA_MODEL", "meta/llama-3.2-11b-vision-instruct")).strip()
 
-NVIDIA_BACKUP_API_KEY = (ENV_VALUES.get("NVIDIA_BACKUP_API_KEY") or os.getenv("NVIDIA_BACKUP_API_KEY", "")).strip()
+NVIDIA_BACKUP_API_KEY = (os.getenv("NVIDIA_BACKUP_API_KEY") or ENV_VALUES.get("NVIDIA_BACKUP_API_KEY", "")).strip()
 
-NVIDIA_BACKUP_MODEL = (ENV_VALUES.get("NVIDIA_BACKUP_MODEL") or os.getenv("NVIDIA_BACKUP_MODEL", "meta/muse-glimmer-30b")).strip()
+NVIDIA_BACKUP_MODEL = (os.getenv("NVIDIA_BACKUP_MODEL") or ENV_VALUES.get("NVIDIA_BACKUP_MODEL", "meta/muse-glimmer-30b")).strip()
 
 
 # ============================================================
@@ -70,12 +71,12 @@ OUTPUT_DIR.mkdir(
 
 
 # ============================================================
-# EXTRACTION SETTINGS
+# EXTRACTION SETTINGS (Deterministic temperature 0.0)
 # ============================================================
 
 MAX_PDF_SIZE_MB = int(os.getenv("MAX_PDF_SIZE_MB", "100"))
 
-LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.1"))
+LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.0"))
 
 LLM_TOP_P = float(os.getenv("LLM_TOP_P", "1.0"))
 
@@ -131,16 +132,6 @@ def validate_config():
     if not NVIDIA_MODEL:
         errors.append(
             "NVIDIA_MODEL is missing"
-        )
-
-    if not MONGODB_URI:
-        errors.append(
-            "MONGODB_URI is missing"
-        )
-
-    if not MONGODB_DATABASE:
-        errors.append(
-            "MONGODB_DATABASE is missing"
         )
 
     return errors

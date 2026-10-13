@@ -11,6 +11,7 @@ __pycache__/
 .Python
 env/
 venv/
+venv313/
 ENV/
 env.bak/
 venv.bak/
@@ -20,6 +21,10 @@ uploads/*
 !uploads/.gitkeep
 outputs/*
 !outputs/.gitkeep
+book_uploads/*
+!book_uploads/.gitkeep
+book_indexes/*
+!book_indexes/.gitkeep
 
 # IDE & OS
 .vscode/
