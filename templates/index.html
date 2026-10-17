@@ -1709,6 +1709,394 @@
             .pdf { min-height: 360px }
         }
 
+        /* ---------- Course Detail View ---------- */
+        .course-hero {
+            background: linear-gradient(135deg, rgba(57, 73, 201, 0.08) 0%, rgba(139, 151, 255, 0.04) 100%);
+            border: 1px solid var(--bd);
+            border-radius: 14px;
+            padding: 22px 24px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        [data-t=dark] .course-hero {
+            background: linear-gradient(135deg, rgba(139, 151, 255, 0.1) 0%, rgba(31, 37, 71, 0.5) 100%);
+        }
+        .course-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .course-meta-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .course-unit-card {
+            border: 1px solid var(--bd);
+            border-radius: 12px;
+            background: var(--card);
+            margin-bottom: 14px;
+            padding: 18px 20px;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .course-unit-card:hover {
+            border-color: var(--pri);
+            box-shadow: 0 4px 14px rgba(0,0,0,.04);
+        }
+        .course-unit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .topic-pill {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: var(--hov);
+            border: 1px solid var(--bd);
+            border-radius: 8px;
+            padding: 9px 12px;
+            font-size: 13px;
+            transition: .15s;
+        }
+        .topic-pill:hover {
+            border-color: var(--pri);
+            background: var(--pris);
+        }
+        .topics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .bloom-badge {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            padding: 2px 7px;
+            border-radius: 5px;
+            flex-shrink: 0;
+        }
+        .bloom-remember { background: rgba(100, 116, 139, 0.15); color: #64748b; }
+        .bloom-understand { background: rgba(14, 165, 233, 0.15); color: #0284c7; }
+        .bloom-apply { background: rgba(99, 102, 241, 0.15); color: #6366f1; }
+        .bloom-analyse, .bloom-analyze { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+        .bloom-evaluate { background: rgba(16, 185, 129, 0.15); color: #059669; }
+        .bloom-create { background: rgba(244, 63, 94, 0.15); color: #e11d48; }
+
+        .book-item-card {
+            border: 1px solid var(--bd);
+            border-radius: 10px;
+            padding: 14px 16px;
+            background: var(--card);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            transition: border-color .15s;
+        }
+        .book-item-card:hover {
+            border-color: var(--pri);
+        }
+
+        /* ---------- 3rd Picture: Master-Detail Course Explorer ---------- */
+        .se-wrap {
+            max-width: 1260px;
+            margin: 0 auto;
+        }
+        .se-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .se-inst-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--fg);
+            background: var(--card);
+            border: 1px solid var(--bd);
+            padding: 6px 14px;
+            border-radius: 20px;
+        }
+        .se-doc-select {
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 8px;
+            border: 1px solid var(--bd);
+            background: var(--card);
+            color: var(--fg);
+            cursor: pointer;
+            max-width: 320px;
+        }
+        .se-heading-area {
+            margin-bottom: 20px;
+        }
+        .se-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -.02em;
+            color: var(--fg);
+            margin-bottom: 6px;
+        }
+        .se-sub {
+            font-size: 14.5px;
+            color: var(--mut);
+        }
+        .se-search-box {
+            position: relative;
+            margin-bottom: 22px;
+        }
+        .se-search-input {
+            width: 100%;
+            height: 50px;
+            padding: 12px 18px 12px 46px;
+            font-size: 15px;
+            background: var(--card);
+            border: 1px solid var(--bd);
+            border-radius: 12px;
+            color: var(--fg);
+            outline: none;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .se-search-input:focus {
+            border-color: var(--pri);
+            box-shadow: 0 0 0 3px rgba(57, 73, 201, 0.15);
+        }
+        [data-t=dark] .se-search-input {
+            background: #151923;
+            border-color: #272d3b;
+        }
+        [data-t=dark] .se-search-input:focus {
+            border-color: #7b88ff;
+            box-shadow: 0 0 0 3px rgba(123, 136, 255, 0.2);
+        }
+        .se-search-ic {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--mut);
+            pointer-events: none;
+        }
+        .se-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.15fr;
+            gap: 20px;
+            align-items: start;
+        }
+        @media (max-width: 960px) {
+            .se-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        .se-list-card {
+            background: var(--card);
+            border: 1px solid var(--bd);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,.02);
+            display: flex;
+            flex-direction: column;
+        }
+        [data-t=dark] .se-list-card {
+            background: #141822;
+            border-color: #242a38;
+        }
+        .se-list-scroll {
+            max-height: 620px;
+            overflow-y: auto;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .se-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: background .12s, border-color .12s;
+            user-select: none;
+        }
+        .se-item:hover {
+            background: var(--hov);
+        }
+        .se-item.active {
+            background: #252044;
+            border-color: #554894;
+            box-shadow: 0 3px 10px rgba(0,0,0,.15);
+        }
+        [data-t=light] .se-item.active {
+            background: #edf0fd;
+            border-color: var(--pri);
+        }
+        .se-item.active .se-code {
+            color: #b4c2ff;
+        }
+        [data-t=light] .se-item.active .se-code {
+            color: var(--pri);
+        }
+        .se-item.active .se-title-txt {
+            color: #ffffff;
+            font-weight: 600;
+        }
+        [data-t=light] .se-item.active .se-title-txt {
+            color: var(--fg);
+        }
+        .se-item.active .se-page {
+            color: #ccd6ff;
+        }
+        [data-t=light] .se-item.active .se-page {
+            color: var(--mut);
+        }
+        .se-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+            flex: 1;
+        }
+        .se-code {
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--mut);
+            width: 86px;
+            flex-shrink: 0;
+            letter-spacing: .02em;
+        }
+        .se-title-txt {
+            font-size: 13.5px;
+            font-weight: 500;
+            color: var(--fg);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .se-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            margin-left: 10px;
+        }
+        .se-page {
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--mut);
+            background: var(--hov);
+            padding: 2px 7px;
+            border-radius: 6px;
+        }
+        .se-preview-card {
+            background: var(--card);
+            border: 1px solid var(--bd);
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            max-height: 670px;
+            box-shadow: 0 4px 20px rgba(0,0,0,.05);
+            position: sticky;
+            top: 20px;
+            overflow: hidden;
+        }
+        [data-t=dark] .se-preview-card {
+            background: #171b26;
+            border-color: #272f40;
+        }
+        .se-preview-head {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--bd);
+            background: var(--hov);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .se-preview-scroll {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .se-unit-row {
+            border-left: 3px solid var(--pri);
+            padding-left: 14px;
+            margin-bottom: 12px;
+        }
+        .se-unit-h {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            color: var(--fg);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .se-unit-body {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--mut);
+        }
+        .se-preview-footer {
+            padding: 14px 20px;
+            border-top: 1px solid var(--bd);
+            background: var(--card);
+            display: flex;
+            gap: 10px;
+        }
+        [data-t=dark] .se-preview-footer {
+            background: #141822;
+        }
+        .se-btn-use {
+            flex: 1;
+            height: 44px;
+            border-radius: 9px;
+            font-size: 14px;
+            font-weight: 700;
+            background: #ffffff;
+            color: #0f172a;
+            border: 0;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform .1s, opacity .15s;
+        }
+        .se-btn-use:hover {
+            opacity: .95;
+            transform: translateY(-1px);
+        }
+        [data-t=light] .se-btn-use {
+            background: var(--pri);
+            color: #ffffff;
+        }
+
         @media(prefers-reduced-motion:reduce) {
             * { animation: none !important; transition: none !important }
         }
@@ -1813,10 +2201,15 @@
             },
             locateTopic(files, topic, validateWithLlm) {
                 const f = new FormData();
-                for (const x of files) f.append('files', x);
+                if (files && files.length) {
+                    for (const x of files) f.append('files', x);
+                }
                 f.append('topic', topic);
                 f.append('validate_with_llm', validateWithLlm ? 'true' : 'false');
                 return req('/books/locate-topic', { method: 'POST', body: f, timeout: 600000 });
+            },
+            getBooks() {
+                return req('/books');
             }
         };
         function explain(r) {
@@ -2079,10 +2472,24 @@
             if (r.ok) S.docs = (Array.isArray(r.data) ? r.data : r.data.documents || []).map(norm);
             return r.ok ? { ok: true, data: S.docs } : r;
         }
-        async function getDoc(id) {
+        function toRoman(n) {
+            const num = parseInt(n) || 1;
+            const r = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+            return r[num - 1] || String(num);
+        }
+
+        async function getDoc(id, force = false) {
             if (id === 'current') id = S.doc?.id;
-            if (!id) { const r = await docs(); if (!r.ok) return r; const l = r.data[0]; if (!l) return { ok: true, data: null }; id = l.id }
-            if (S.doc?.id === id && S.doc.loaded) return { ok: true, data: S.doc };
+            if (!id) {
+                const r = await docs();
+                if (!r.ok) return r;
+                const dList = r.data || [];
+                // Prioritize documents with highest course count (syllabus documents over single-course books)
+                const best = [...dList].sort((a,b) => (b.course_count ?? (b.courses ? b.courses.length : 0)) - (a.course_count ?? (a.courses ? a.courses.length : 0)))[0];
+                if (!best) return { ok: true, data: null };
+                id = best.id;
+            }
+            if (!force && S.doc?.id === id && S.doc.loaded) return { ok: true, data: S.doc };
             const r = await API.document(id); if (!r.ok) return r;
             S.doc = { ...norm(r.data), loaded: 1 };
             return { ok: true, data: S.doc };
@@ -2134,16 +2541,592 @@
             S.fileId = id;
             location.hash = '#/results/' + id;
         }
+
+        /* ---------- 5b. MASTER-DETAIL COURSE EXPLORER (3rd Picture Style) ---------- */
+        function renderExplorerItemsHtml(doc) {
+            const q = (S.explorerFilter || '').toLowerCase().trim();
+            const courses = doc.courses || [];
+            return courses.map((c, i) => {
+                const code = (c.code || '').toLowerCase();
+                const title = (c.title || '').toLowerCase();
+                if (q && !code.includes(q) && !title.includes(q)) return '';
+                const det = detOf(doc, c);
+                const isExt = !!(det && det.units && det.units.length);
+                const isActive = (i === S.explorerIdx);
+                return `<div class="se-item ${isActive ? 'active' : ''}" data-a="selectCourseInExplorer" data-idx="${i}">
+                  <div class="se-left">
+                    <span class="se-code">${esc(c.code || '—')}</span>
+                    <span class="se-title-txt" title="${esc(c.title)}">${esc(c.title)}</span>
+                  </div>
+                  <div class="se-right">
+                    <span class="se-page">p${c.page ?? '—'}</span>
+                    ${isExt ? `<span class="dot ok" title="Verified Syllabus" style="width:7px;height:7px;flex-shrink:0"></span>` : ''}
+                  </div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderExplorerPreviewHtml(doc, c, idx, isExt, det) {
+            if (!c) return `<div style="padding:40px;text-align:center" class="mut">Select a course from the list to view its syllabus details.</div>`;
+            const code = c.code || '—';
+            const title = c.title || 'Untitled Course';
+            const courseQuery = (c.code ? `${c.code} | ${c.title}` : c.title).trim();
+            const cInfo = (det && det.course) || {};
+            const credits = cInfo.credits ?? c.credits ?? '—';
+            const semester = cInfo.semester ?? c.semester ?? '—';
+            const category = cInfo.category ?? c.category ?? '—';
+            const hours = cInfo.hours ?? c.hours ?? '—';
+            const page = (cInfo.pages && cInfo.pages.length) ? cInfo.pages.join(', ') : (c.page != null ? `p${c.page}` : '—');
+
+            let inner = '';
+            if (isExt && det) {
+                const units = det.units || [];
+                const cos = det.course_outcomes || [];
+                const books = det.books || [];
+                const textbooks = det.textbooks || books.filter(b => (b.type || '').toLowerCase().includes('text') || b.kind === 'text');
+                const references = det.references || books.filter(b => (b.type || '').toLowerCase().includes('ref') || b.kind === 'reference');
+                const matrix = det.co_po_matrix || {};
+
+                const unitsHtml = units.map((u, ui) => {
+                    const roman = toRoman(ui + 1);
+                    const rawUnitName = (u.title || u.unit || `Unit ${ui + 1}`).replace(/^unit\s*\d+\s*[:-]?\s*/i, '');
+                    const topics = u.topics || [];
+
+                    const topicsRendered = topics.map(tp => {
+                        const tText = typeof tp === 'string' ? tp : (tp.text || tp.title || tp.name || '');
+                        if (!tText) return '';
+                        const bloom = (typeof tp === 'object' && tp.bloom) ? String(tp.bloom).toLowerCase() : '';
+                        let subtopics = [];
+                        if (typeof tp === 'object') {
+                            if (Array.isArray(tp.subtopics)) subtopics = tp.subtopics;
+                            else if (typeof tp.subtopics === 'string' && tp.subtopics.trim()) {
+                                subtopics = tp.subtopics.split(/[,;\n]/).map(s => s.trim()).filter(Boolean);
+                            }
+                        }
+                        return `<div style="padding:7px 10px;margin-bottom:6px;background:var(--hov);border-radius:6px;border-left:3px solid var(--pri)">
+                          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+                            <span style="font-weight:600;font-size:12.5px;color:var(--fg)">${esc(tText)}</span>
+                            ${bloom ? `<span class="bloom-badge bloom-${esc(bloom)}" style="font-size:10px;padding:1px 5px">${esc(bloom)}</span>` : ''}
+                          </div>
+                          ${subtopics.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${subtopics.map(st => `<span class="mut" style="font-size:11px;background:var(--card);border:1px solid var(--bd);padding:1px 6px;border-radius:4px">${esc(typeof st === 'string' ? st : (st.text || ''))}</span>`).join('')}</div>` : ''}
+                        </div>`;
+                    }).join('');
+
+                    return `<div class="se-unit-row" style="margin-bottom:14px">
+                      <div class="se-unit-h" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                        <div style="display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px">
+                          <span style="color:var(--pri)">${roman}.</span>
+                          <span>${esc(rawUnitName.toUpperCase())}</span>
+                        </div>
+                        ${u.hours ? `<span class="badge in" style="font-size:10.5px">${u.hours} hrs</span>` : ''}
+                      </div>
+                      <div class="se-unit-body">${topicsRendered || `<div class="mut" style="font-size:12px;padding-left:4px">${esc(u.text || 'Topics and core competencies')}</div>`}</div>
+                    </div>`;
+                }).join('');
+
+                const cosHtml = cos.length ? `
+                  <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bd)">
+                    <div style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;color:var(--fg);display:flex;align-items:center;gap:6px">
+                      ${I('target', 14)} Course Outcomes (COs)
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      ${cos.map(co => `<div style="font-size:12.5px;line-height:1.5;display:flex;gap:8px;align-items:flex-start">
+                        <b class="mono" style="color:var(--pri);flex-shrink:0">${esc(co.code || co.id || 'CO')}</b>
+                        <span style="color:var(--mut);flex:1">${esc(co.text)}</span>
+                        ${co.bloom ? `<span class="bloom-badge bloom-${esc(String(co.bloom).toLowerCase())}">${esc(co.bloom)}</span>` : ''}
+                      </div>`).join('')}
+                    </div>
+                  </div>
+                ` : '';
+
+                const booksHtml = (textbooks.length || references.length) ? `
+                  <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bd)">
+                    <div style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;color:var(--fg);display:flex;align-items:center;gap:6px">
+                      ${I('book', 14)} Prescribed Textbooks & References (${textbooks.length + references.length})
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:6px">
+                      ${textbooks.map((b, bi) => {
+                          const meta = [b.author, b.publisher, b.edition, b.year ? `(${b.year})` : ''].filter(Boolean).join(' · ');
+                          return `<div style="font-size:12px;color:var(--fg);line-height:1.4;background:var(--hov);padding:7px 10px;border-radius:6px;border-left:3px solid var(--ok)">
+                            <div style="display:flex;align-items:flex-start;gap:6px">
+                              <span class="badge ok" style="padding:1px 5px;font-size:10px;flex-shrink:0">TEXT ${bi+1}</span>
+                              <div style="flex:1"><b>${esc(b.title || b.text || '')}</b>${meta ? `<div class="mut" style="font-size:11px;margin-top:2px">${esc(meta)}</div>` : ''}</div>
+                            </div>
+                          </div>`;
+                      }).join('')}
+                      ${references.map((b, bi) => {
+                          const meta = [b.author, b.publisher, b.edition, b.year ? `(${b.year})` : ''].filter(Boolean).join(' · ');
+                          return `<div style="font-size:12px;color:var(--fg);line-height:1.4;background:var(--hov);padding:7px 10px;border-radius:6px;border-left:3px solid var(--in)">
+                            <div style="display:flex;align-items:flex-start;gap:6px">
+                              <span class="badge in" style="padding:1px 5px;font-size:10px;flex-shrink:0">REF ${bi+1}</span>
+                              <div style="flex:1"><b>${esc(b.title || b.text || '')}</b>${meta ? `<div class="mut" style="font-size:11px;margin-top:2px">${esc(meta)}</div>` : ''}</div>
+                            </div>
+                          </div>`;
+                      }).join('')}
+                    </div>
+                  </div>
+                ` : '';
+
+                const preamble = cInfo.preamble || (det.course && det.course.preamble) || '';
+                const preambleHtml = preamble ? `
+                  <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--bd)">
+                    <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;color:var(--fg)">
+                      Preamble & Course Overview
+                    </div>
+                    <div style="font-size:12.5px;line-height:1.6;color:var(--mut)">${esc(preamble)}</div>
+                  </div>
+                ` : '';
+
+                const matrixHtml = Object.keys(matrix).length ? `
+                  <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bd)">
+                    <div style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;color:var(--fg);display:flex;align-items:center;gap:6px">
+                      ${I('grid', 14)} CO-PO Articulation Matrix
+                    </div>
+                    <div style="overflow-x:auto;border:1px solid var(--bd);border-radius:8px">
+                      <table class="tbl sm" style="font-size:11px;text-align:center;margin:0;width:100%">
+                        <thead>
+                          <tr style="background:var(--hov)">
+                            <th style="text-align:left;padding:6px 10px">CO</th>
+                            ${[1,2,3,4,5,6,7,8,9,10,11,12].map(n => `<th style="padding:6px 4px">PO${n}</th>`).join('')}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${Object.entries(matrix).map(([coKey, pos]) => `
+                            <tr>
+                              <td style="text-align:left;padding:6px 10px;font-weight:700;color:var(--pri)">${esc(coKey)}</td>
+                              ${[1,2,3,4,5,6,7,8,9,10,11,12].map(n => {
+                                const v = pos['PO' + n] || '—';
+                                const isH = v === 'S' || v === '3' || v === 'H';
+                                const isM = v === 'M' || v === '2';
+                                const color = isH ? 'var(--pri)' : (isM ? 'var(--in)' : 'var(--mut)');
+                                return `<td style="padding:6px 4px;font-weight:${isH||isM?700:400};color:${color}">${esc(v)}</td>`;
+                              }).join('')}
+                            </tr>
+                          `).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ` : '';
+
+                inner = `
+                  <div class="se-preview-head">
+                    <div>
+                      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                        <span class="mono" style="font-weight:700;font-size:14px;color:var(--pri)">${esc(code)}</span>
+                        <span class="badge ok" style="font-size:11px"><span class="dot ok"></span>Extracted & Verified</span>
+                      </div>
+                      <h2 style="font-size:18px;font-weight:700;line-height:1.3">${esc(title)}</h2>
+                      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+                        <span class="badge in" style="font-size:11px">${page}</span>
+                        ${credits !== '—' ? `<span class="badge in" style="font-size:11px">Credits: ${credits}</span>` : ''}
+                        ${hours !== '—' ? `<span class="badge in" style="font-size:11px">Hours: ${hours}</span>` : ''}
+                        ${semester !== '—' ? `<span class="badge in" style="font-size:11px">Sem: ${semester}</span>` : ''}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="se-preview-scroll">
+                    ${preambleHtml}
+                    ${unitsHtml}
+                    ${cosHtml}
+                    ${matrixHtml}
+                    ${booksHtml}
+                  </div>
+                  <div class="se-preview-footer">
+                    <button class="se-btn-use" data-a="useCourse" data-doc="${esc(doc.id)}" data-idx="${idx}">
+                      View Course Page &rarr;
+                    </button>
+                    <button class="btn sm gh" data-a="locateCourseTopic" data-topic="${esc(title)}" title="Find this subject in Topic Locator">
+                      ${I('target', 14)} Locate in Books
+                    </button>
+                  </div>
+                `;
+            } else {
+                inner = `
+                  <div class="se-preview-head">
+                    <div>
+                      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                        <span class="mono" style="font-weight:700;font-size:14px;color:var(--pri)">${esc(code)}</span>
+                        <span class="badge wn" style="font-size:11px">Index only</span>
+                      </div>
+                      <h2 style="font-size:18px;font-weight:700;line-height:1.3">${esc(title)}</h2>
+                      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+                        <span class="badge in" style="font-size:11px">Detected at Page ${c.page ?? '—'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="se-preview-scroll" style="display:flex;align-items:center;justify-content:center;text-align:center;padding:50px 20px">
+                    <div style="max-width:340px">
+                      <div class="ic" style="margin:0 auto 12px">${I('cpu', 34)}</div>
+                      <h3 style="font-size:16px;margin-bottom:8px">Syllabus Details Not Extracted Yet</h3>
+                      <p class="mut" style="font-size:13px;line-height:1.5;margin-bottom:18px">
+                        Click below to extract Units, Topics, Course Outcomes (COs), and Prescribed Books for <b>${esc(title)}</b>.
+                      </p>
+                      <button class="btn pri" data-a="extractCourseInExplorer" data-doc="${esc(doc.id)}" data-course="${esc(courseQuery)}" data-idx="${idx}">
+                        ${I('act', 15)} Extract Full Syllabus
+                      </button>
+                    </div>
+                  </div>
+                  <div class="se-preview-footer">
+                    <button class="se-btn-use" data-a="useCourse" data-doc="${esc(doc.id)}" data-idx="${idx}">
+                      View Course Page &rarr;
+                    </button>
+                  </div>
+                `;
+            }
+
+            return inner;
+        }
+
         R.results = async id => {
             crumb('Documents', 'Results'); skel();
-            const r = await getDoc(id || 'current');
-            const head = `<div class="ph"><div><h1>Results</h1></div>${upBtn}</div>`;
-            if (!r.ok) return set(head + errBox(r));
-            const doc = r.data; if (!doc) return set(head + empty('book', 'No courses', '', upBtn));
-            const rows = doc.courses.map((c, i) => `<tr><td class="mono">${esc(c.code || '—')}</td><td>${esc(c.title)}</td><td>${c.page ?? '—'}</td><td><a class="btn sm" href="#/course/${doc.id}/${i}">Open</a></td></tr>`).join('');
-            set(head + `<div class="tw"><table><thead><tr><th>Code</th><th>Title</th><th>Page</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`);
+            const docR = await getDoc(id || 'current');
+            if (!docR.ok) return set(errBox(docR));
+            const doc = docR.data;
+            if (!doc) return set(empty('book', 'No document found', 'Please upload a syllabus PDF.', upBtn));
+            S.doc = doc;
+
+            const docsListR = await docs();
+            const docsList = docsListR.ok ? (docsListR.data || []) : [];
+
+            // Select default course (prefer first extracted course if available, e.g. AMA101)
+            if (S.explorerIdx == null || S.explorerIdx >= (doc.courses || []).length) {
+                const firstExt = (doc.courses || []).findIndex(c => detOf(doc, c) && detOf(doc, c).units && detOf(doc, c).units.length);
+                S.explorerIdx = firstExt >= 0 ? firstExt : 0;
+            }
+
+            const currentCourse = (doc.courses || [])[S.explorerIdx] || (doc.courses || [])[0];
+            const det = detOf(doc, currentCourse);
+            const isExt = !!(det && det.units && det.units.length);
+
+            crumb('Documents', doc.filename || 'Syllabus Explorer');
+
+            const html = `
+              <div class="se-wrap">
+                <!-- Topbar with Regulation / Institute + Document Switcher -->
+                <div class="se-topbar">
+                  <div class="se-inst-pill">
+                    ${I('file', 15)}
+                    <span>${esc(doc.college || doc.filename)} &middot; Regulations 2024</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span class="mut" style="font-size:12px">Document:</span>
+                    <select class="se-doc-select" id="seDocSelect" data-a="switchResultsDoc">
+                      ${docsList.map(d => `<option value="${d.id}" ${d.id === doc.id ? 'selected' : ''}>${esc(d.filename)} (${d.course_count ?? (d.courses ? d.courses.length : 0)} courses)</option>`).join('')}
+                    </select>
+                    <button class="btn sm pri" data-a="extractAllCoursesInExplorer" data-doc="${esc(doc.id)}" title="Extract syllabus for all subjects in this document">
+                      ${I('act', 14)} Extract All Subjects
+                    </button>
+                    ${upBtn}
+                  </div>
+                </div>
+
+                <!-- Big Headline (Matching 3rd Picture) -->
+                <div class="se-heading-area">
+                  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+                    <div>
+                      <h1 class="se-title">Which course is this syllabus for?</h1>
+                      <p class="se-sub">We found <b>${(doc.courses || []).length} courses</b> in <b>${doc.pages || '?'} pages</b> &middot; <span style="color:var(--ok);font-weight:600">${(doc.courses || []).filter(c => detOf(doc, c) && detOf(doc, c).units && detOf(doc, c).units.length).length} fully extracted</span>. Click any course or search code.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Full-width Search Input -->
+                <div class="se-search-box">
+                  <span class="se-search-ic">${I('search', 18)}</span>
+                  <input type="text" class="se-search-input" id="seSearchInput" placeholder="Course code or name" value="${esc(S.explorerFilter || '')}" autocomplete="off">
+                </div>
+
+                <!-- Two-Panel Master-Detail Explorer (3rd Picture Layout) -->
+                <div class="se-layout">
+                  <!-- Left Panel: Scrollable Course List -->
+                  <div class="se-list-card">
+                    <div class="se-list-scroll" id="seCoursesList">
+                      ${renderExplorerItemsHtml(doc)}
+                    </div>
+                  </div>
+
+                  <!-- Right Panel: Live Course Syllabus Inspector -->
+                  <div class="se-preview-card" id="sePreviewWrap">
+                    ${renderExplorerPreviewHtml(doc, currentCourse, S.explorerIdx, isExt, det)}
+                  </div>
+                </div>
+              </div>
+            `;
+
+            set(html);
+
+            const sInp = $('#seSearchInput');
+            if (sInp) {
+                sInp.oninput = () => {
+                    S.explorerFilter = sInp.value.toLowerCase();
+                    const listEl = $('#seCoursesList');
+                    if (listEl) listEl.innerHTML = renderExplorerItemsHtml(doc);
+                };
+            }
         };
-        R.course = async () => { crumb('Documents', 'Course'); set('<div class="card"><h2>Course detail</h2></div>') };
+        R.course = async (docId, courseIdxOrCode) => {
+            crumb('Documents', 'Course Detail'); skel();
+            const r = await getDoc(docId || 'current');
+            if (!r.ok) return set(errBox(r));
+            const doc = r.data;
+            if (!doc) return set(empty('book', 'No document found', 'Please upload or select a syllabus document first.', upBtn));
+
+            const courses = doc.courses || [];
+            let course = null;
+            let cIndex = -1;
+
+            if (courseIdxOrCode != null) {
+                if (!isNaN(Number(courseIdxOrCode)) && courses[Number(courseIdxOrCode)]) {
+                    cIndex = Number(courseIdxOrCode);
+                    course = courses[cIndex];
+                } else {
+                    cIndex = courses.findIndex(c => (c.code && c.code.toLowerCase() === String(courseIdxOrCode).toLowerCase()) || (c.title && c.title.toLowerCase() === String(courseIdxOrCode).toLowerCase()));
+                    if (cIndex >= 0) course = courses[cIndex];
+                }
+            }
+
+            if (!course && courses.length > 0) {
+                cIndex = 0;
+                course = courses[0];
+            }
+
+            if (!course) {
+                return set(`<div class="ph"><div><h1>Course Not Found</h1><p class="mut">No courses listed in this document.</p></div><a class="btn sm" href="#/results/${doc.id}">← Back to Results</a></div>`);
+            }
+
+            crumb('Documents', doc.filename || 'Document', course.code || course.title);
+
+            const det = detOf(doc, course);
+            const isExtracted = !!(det && det.units && det.units.length);
+            const courseQuery = (course.code ? `${course.code} | ${course.title}` : course.title).trim();
+
+            const cInfo = (det && det.course) || {};
+            const code = cInfo.code || course.code || '—';
+            const title = cInfo.title || course.title || 'Untitled Course';
+            const credits = cInfo.credits ?? course.credits ?? '—';
+            const semester = cInfo.semester ?? course.semester ?? '—';
+            const category = cInfo.category ?? course.category ?? '—';
+            const hours = cInfo.hours ?? course.hours ?? '—';
+            const pages = (cInfo.pages && cInfo.pages.length) ? cInfo.pages.join(', ') : (course.page != null ? `Page ${course.page}` : '—');
+
+            const activeTab = S.tab.course || 'units';
+            let tabContent = '';
+
+            if (!isExtracted) {
+                tabContent = `
+                  <div class="card" style="text-align:center;padding:44px 24px;max-width:660px;margin:28px auto">
+                    <div class="ic" style="margin:0 auto 14px">${I('cpu', 36)}</div>
+                    <h2 style="font-size:18px">Detailed Syllabus Not Extracted Yet</h2>
+                    <p class="mut" style="margin:10px 0 22px;font-size:13.5px;line-height:1.6">
+                      Run AI extraction on this course to parse all units, lecture hours, topics, Bloom's taxonomy classifications, Course Outcomes (COs), and prescribed textbooks.
+                    </p>
+                    <button class="btn pri" data-a="extractCourseNow" data-doc="${esc(doc.id)}" data-course="${esc(courseQuery)}">
+                      ${I('act', 16)} Extract Full Syllabus Details
+                    </button>
+                  </div>
+                `;
+            } else {
+                const units = det.units || [];
+                const cos = det.course_outcomes || [];
+                const books = det.books || [];
+                const textbooks = det.textbooks || books.filter(b => (b.type || '').toLowerCase().includes('text') || b.kind === 'text');
+                const references = det.references || books.filter(b => (b.type || '').toLowerCase().includes('ref') || b.kind === 'reference');
+                const matrix = det.co_po_matrix || {};
+
+                if (activeTab === 'units') {
+                    if (!units.length) {
+                        tabContent = empty('grid', 'No Units Found', 'Units could not be parsed for this course.');
+                    } else {
+                        tabContent = units.map((u, ui) => {
+                            const unitTitle = u.title ? `${u.unit ? u.unit + ': ' : ''}${u.title}` : (u.unit || `Unit ${ui + 1}`);
+                            const topics = u.topics || [];
+                            const topicsHtml = topics.map(tp => {
+                                const tText = typeof tp === 'string' ? tp : (tp.text || tp.title || tp.name || 'Topic');
+                                const bloom = (typeof tp === 'object' && tp.bloom) ? String(tp.bloom).toLowerCase() : '';
+                                let subtopics = [];
+                                if (typeof tp === 'object') {
+                                    if (Array.isArray(tp.subtopics)) subtopics = tp.subtopics;
+                                    else if (typeof tp.subtopics === 'string' && tp.subtopics.trim()) {
+                                        subtopics = tp.subtopics.split(/[,;\n]/).map(s => s.trim()).filter(Boolean);
+                                    }
+                                }
+                                
+                                return `<div class="topic-pill">
+                                  <div style="flex:1;min-width:0">
+                                    <div style="font-weight:500">${esc(tText)}</div>
+                                    ${subtopics.length ? `<div class="mut" style="font-size:11px;margin-top:3px">${subtopics.map(st => esc(typeof st === 'string' ? st : (st.text || st.title || ''))).join(' · ')}</div>` : ''}
+                                  </div>
+                                  <div style="display:flex;align-items:center;gap:6px">
+                                    ${bloom ? `<span class="bloom-badge bloom-${esc(bloom)}">${esc(bloom)}</span>` : ''}
+                                    <button class="btn sm gh" style="padding:3px 8px;font-size:11.5px" data-a="locateCourseTopic" data-topic="${esc(tText)}" title="Locate in Reference Books">
+                                      ${I('target', 13)} Locate
+                                    </button>
+                                  </div>
+                                </div>`;
+                            }).join('');
+
+                            return `<div class="course-unit-card">
+                              <div class="course-unit-header">
+                                <div>
+                                  <h3 style="font-size:15px;display:flex;align-items:center;gap:8px">
+                                    ${I('book', 16)} ${esc(unitTitle)}
+                                  </h3>
+                                  ${u.hours ? `<span class="mut" style="font-size:12px">${u.hours} Lecture Hours · Page ${u.page ?? '—'}</span>` : ''}
+                                </div>
+                                <span class="badge in">${topics.length} topics</span>
+                              </div>
+                              ${u.text ? `<p class="mut" style="font-size:12.5px;line-height:1.5;margin-bottom:12px;background:var(--hov);padding:10px 12px;border-radius:8px">${esc(u.text)}</p>` : ''}
+                              <div class="topics-grid">${topicsHtml}</div>
+                            </div>`;
+                        }).join('');
+                    }
+                } else if (activeTab === 'outcomes') {
+                    if (!cos.length) {
+                        tabContent = empty('target', 'No Course Outcomes', 'No course outcomes (COs) found for this course.');
+                    } else {
+                        const coRows = cos.map(co => {
+                            const bloom = co.bloom ? String(co.bloom).toLowerCase() : '';
+                            return `<tr>
+                              <td class="mono" style="font-weight:700;color:var(--pri)">${esc(co.code || co.id || 'CO')}</td>
+                              <td style="font-size:13.5px;line-height:1.5">${esc(co.text)}</td>
+                              <td>${bloom ? `<span class="bloom-badge bloom-${esc(bloom)}">${esc(bloom)}</span>` : '—'}</td>
+                              <td class="mut">${co.page ?? '—'}</td>
+                            </tr>`;
+                        }).join('');
+
+                        tabContent = `<div class="card tw">
+                          <table style="width:100%">
+                            <thead>
+                              <tr>
+                                <th style="width:90px">CO Code</th>
+                                <th>Course Outcome Statement</th>
+                                <th style="width:140px">Bloom's Level</th>
+                                <th style="width:70px">Page</th>
+                              </tr>
+                            </thead>
+                            <tbody>${coRows}</tbody>
+                          </table>
+                        </div>`;
+                    }
+                } else if (activeTab === 'books') {
+                    const renderBookList = (list, kindTitle) => {
+                        if (!list.length) return `<p class="mut" style="font-size:13px;padding:8px 0">No ${kindTitle.toLowerCase()} listed.</p>`;
+                        return list.map(b => {
+                            const bTitle = b.title || b.text || 'Reference Book';
+                            const author = b.author || '';
+                            const pub = b.publisher || '';
+                            const ed = b.edition || '';
+                            const yr = b.year ? `(${b.year})` : '';
+
+                            return `<div class="book-item-card">
+                              <div>
+                                <div style="font-weight:600;font-size:13.5px">${esc(bTitle)}</div>
+                                ${(author || pub || ed || yr) ? `<div class="mut" style="font-size:12px;margin-top:2px">${[author, pub, ed, yr].filter(Boolean).map(esc).join(' · ')}</div>` : ''}
+                              </div>
+                              <button class="btn sm gh" data-a="locateCourseTopic" data-topic="${esc(title)}" title="Find this subject in Topic Locator">
+                                ${I('target', 14)} Search in Books
+                              </button>
+                            </div>`;
+                        }).join('');
+                    };
+
+                    tabContent = `
+                      <div class="g" style="grid-template-columns:1fr 1fr;gap:16px">
+                        <div class="card">
+                          <div class="row" style="justify-content:space-between;margin-bottom:12px">
+                            <h2>${I('book', 16)} Textbooks</h2>
+                            <span class="badge ok">${textbooks.length}</span>
+                          </div>
+                          ${renderBookList(textbooks, 'Textbooks')}
+                        </div>
+                        <div class="card">
+                          <div class="row" style="justify-content:space-between;margin-bottom:12px">
+                            <h2>${I('file', 16)} Reference Books</h2>
+                            <span class="badge in">${references.length}</span>
+                          </div>
+                          ${renderBookList(references, 'Reference Books')}
+                        </div>
+                      </div>
+                    `;
+                } else if (activeTab === 'matrix') {
+                    const hasMatrix = Object.keys(matrix).length > 0;
+                    if (!hasMatrix) {
+                        tabContent = empty('grid', 'No CO-PO Matrix', 'CO-PO mapping matrix was not found or not formatted in this syllabus.');
+                    } else {
+                        const poKeys = ['PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11','PO12'];
+                        const coKeys = Object.keys(matrix);
+                        const mRows = coKeys.map(co => {
+                            const cells = poKeys.map(po => {
+                                const val = (matrix[co] && matrix[co][po]) || '—';
+                                return `<td style="text-align:center;font-weight:600;color:${val !== '—' ? 'var(--pri)' : 'var(--mut)'}">${val}</td>`;
+                            }).join('');
+                            return `<tr><td class="mono" style="font-weight:700">${esc(co)}</td>${cells}</tr>`;
+                        }).join('');
+
+                        tabContent = `<div class="card tw">
+                          <div class="row" style="justify-content:space-between;margin-bottom:12px">
+                            <h2>CO-PO Articulation Matrix</h2>
+                            <span class="badge in">Correlation Levels: 1 (Slight), 2 (Moderate), 3 (Substantial)</span>
+                          </div>
+                          <table>
+                            <thead>
+                              <tr>
+                                <th>CO / PO</th>
+                                ${poKeys.map(p => `<th style="text-align:center">${p}</th>`).join('')}
+                              </tr>
+                            </thead>
+                            <tbody>${mRows}</tbody>
+                          </table>
+                        </div>`;
+                    }
+                } else if (activeTab === 'raw') {
+                    tabContent = `<div class="card"><pre style="max-height:500px;overflow:auto;font-family:var(--mono);font-size:12px;background:var(--hov);padding:14px;border-radius:8px">${esc(JSON.stringify(det, null, 2))}</pre></div>`;
+                }
+            }
+
+            const hero = `
+              <div class="course-hero">
+                <div class="course-title-row">
+                  <div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                      <span class="mono" style="font-weight:700;font-size:15px;color:var(--pri);background:var(--pris);padding:3px 10px;border-radius:6px">${esc(code)}</span>
+                      <span class="badge ${isExtracted ? 'ok' : 'wn'}">${isExtracted ? '<span class="dot ok"></span> Extracted & Verified' : 'Index Only'}</span>
+                    </div>
+                    <h1 style="font-size:22px;margin:2px 0 6px">${esc(title)}</h1>
+                    <div class="course-meta-tags">
+                      <span class="badge in">Category: ${esc(category)}</span>
+                      <span class="badge in">Credits: ${esc(credits)}</span>
+                      <span class="badge in">Hours (L-T-P): ${esc(hours)}</span>
+                      <span class="badge in">Semester: ${esc(semester)}</span>
+                      <span class="badge in">${esc(pages)}</span>
+                    </div>
+                  </div>
+                  <div class="row" style="gap:8px">
+                    <a class="btn sm gh" href="#/results/${doc.id}">← Back to Courses</a>
+                    <button class="btn sm pri" data-a="extractCourseNow" data-doc="${esc(doc.id)}" data-course="${esc(courseQuery)}" ${isExtracted ? 'data-force="1"' : ''}>
+                      ${I('act', 14)} ${isExtracted ? 'Re-extract Syllabus' : 'Extract Syllabus'}
+                    </button>
+                    <a class="btn sm" href="#/books">${I('target', 14)} Reference Book Locator</a>
+                  </div>
+                </div>
+              </div>
+
+              ${isExtracted ? `
+                <div class="tabs" role="tablist">
+                  <button role="tab" aria-selected="${activeTab === 'units'}" data-a="courseTab" data-tab="units">${I('book', 14)} Syllabus Units (${(det.units || []).length})</button>
+                  <button role="tab" aria-selected="${activeTab === 'outcomes'}" data-a="courseTab" data-tab="outcomes">${I('target', 14)} Course Outcomes (${(det.course_outcomes || []).length})</button>
+                  <button role="tab" aria-selected="${activeTab === 'books'}" data-a="courseTab" data-tab="books">${I('file', 14)} Textbooks & References (${(det.books || []).length})</button>
+                  <button role="tab" aria-selected="${activeTab === 'matrix'}" data-a="courseTab" data-tab="matrix">${I('grid', 14)} CO-PO Matrix</button>
+                  <button role="tab" aria-selected="${activeTab === 'raw'}" data-a="courseTab" data-tab="raw">${I('sliders', 14)} Raw JSON</button>
+                </div>
+              ` : ''}
+
+              ${tabContent}
+            `;
+
+            set(hero);
+        };
         R.review = async () => { crumb('Review'); set(empty('shield', 'Review Center', 'Load a document first.')) };
         R.exports = async () => { crumb('Exports'); set(empty('down', 'Export Center', 'Extract a syllabus first.')) };
         R.settings = async () => { crumb('Settings'); set('<div class="card"><h2>Settings</h2><p class="mut">Backend and API status are shown in the top bar.</p></div>') };
@@ -2151,6 +3134,16 @@
         /* ---------- 5i. REFERENCE BOOK TOPIC LOCATOR ---------- */
         R.books = () => {
             crumb('Reference Books', 'Topic Locator');
+            if (!S.serverBooks && !S.loadingBooks) {
+                S.loadingBooks = true;
+                API.getBooks().then(r => {
+                    S.loadingBooks = false;
+                    if (r.ok && r.data && r.data.books) {
+                        S.serverBooks = r.data.books;
+                        route();
+                    }
+                });
+            }
             const files = S.bookFiles || [];
             const R2 = S.locResult, busy = S.locBusy, err = S.locError;
 
@@ -2183,10 +3176,10 @@
                   End-to-End Locator Pipeline Architecture (8 Steps)
                 </div>
                 <div class="loc-pipeline-track">
-                  <div class="loc-pipe-step ${files.length ? 'current' : ''}">
+                  <div class="loc-pipe-step ${(files.length || (S.serverBooks && S.serverBooks.length)) ? 'current' : ''}">
                     <span class="loc-pipe-num">1</span>
-                    <div class="loc-pipe-title">Upload Book(s)</div>
-                    <div class="loc-pipe-desc">1 book, 3 books, or more</div>
+                    <div class="loc-pipe-title">Upload / Indexed Books</div>
+                    <div class="loc-pipe-desc">3 books indexed & ready</div>
                   </div>
                   <div class="loc-pipe-arrow">&rarr;</div>
                   <div class="loc-pipe-step ${R2 ? 'current' : ''}">
@@ -2238,23 +3231,31 @@
                   <!-- Step 1 Card -->
                   <div class="card">
                     <div class="row" style="justify-content:space-between;margin-bottom:8px">
-                      <h2>${I('file', 16)} 1. Upload Reference Book(s)</h2>
-                      <span class="badge in">Supports 1, 3, or more books</span>
+                      <h2>${I('file', 16)} 1. Reference Books (Indexed & Ready)</h2>
+                      <span class="badge in">${(S.serverBooks && S.serverBooks.length) ? `${S.serverBooks.length} Books on Server` : '3 Books on Server'}</span>
                     </div>
                     <input type="file" id="bkfi" accept="application/pdf,.pdf" multiple hidden>
                     <div class="drop" id="bkdz" tabindex="0" role="button" data-a="pickBooks" style="padding:22px">
                       <div class="ic">${I('up', 26)}</div>
-                      <h3 style="font-size:15px">Drop reference book PDF(s) here</h3>
-                      <p class="mut" style="margin:4px 0 10px;font-size:12.5px">e.g. Engineering Mathematics, Higher Eng Math</p>
+                      <h3 style="font-size:15px">Drop additional textbook PDF(s) here</h3>
+                      <p class="mut" style="margin:4px 0 10px;font-size:12.5px">Or search immediately across server's indexed reference books below</p>
                       <button class="btn pri sm" data-a="pickBooks">Browse files</button>
                     </div>
 
                     <div style="margin-top:10px">
-                      <div class="mut" style="font-size:11.5px;margin-bottom:4px">Example Reference Books:</div>
+                      <div class="mut" style="font-size:11.5px;margin-bottom:4px">Indexed Reference Books on Server (Ready for instant search):</div>
                       <div style="display:flex;gap:6px;flex-wrap:wrap">
-                        <span class="loc-pill">1. Engineering Mathematics.pdf</span>
-                        <span class="loc-pill">2. Higher Engineering Mathematics.pdf</span>
-                        <span class="loc-pill">3. Advanced Engineering Mathematics.pdf</span>
+                        ${(S.serverBooks && S.serverBooks.length) ? S.serverBooks.map(b => `
+                          <span class="loc-pill" style="display:inline-flex;align-items:center;gap:5px;background:var(--hov);border:1px solid var(--border)">
+                            <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok)"></span>
+                            <b>${esc(b.filename)}</b>
+                            <small class="mut">(${b.total_pages}p, ${b.pdf_type})</small>
+                          </span>
+                        `).join('') : `
+                          <span class="loc-pill">Higher Engineering Mathematics - BS Grewal</span>
+                          <span class="loc-pill">engineering-mathematics-1-by-t-veerarajan</span>
+                          <span class="loc-pill">probability and statistics - T.Veerarajan</span>
+                        `}
                       </div>
                     </div>
 
@@ -2494,6 +3495,29 @@
                     ${I('chk', 18)}
                     <span><b>Exact topic range found:</b> ${esc(r.page_display || `Page ${r.start_page}–${r.end_page}`)}</span>
                   </div>
+
+                  ${(r.core_definition || (r.validation && r.validation.core_definition) || r.supporting_passage) ? `
+                  <div style="margin-top:12px;background:var(--card);border-left:4px solid var(--pri);border:1px solid var(--bd);border-left-width:4px;padding:12px 14px;border-radius:8px">
+                    <div style="font-size:11px;font-weight:700;color:var(--pri);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;display:flex;align-items:center;gap:6px">
+                      ${I('book', 14)} Authoritative Textbook Definition & Core Formulation
+                    </div>
+                    <div style="font-size:13px;line-height:1.55;color:var(--fg);font-style:italic">
+                      &ldquo;${esc(r.core_definition || (r.validation && r.validation.core_definition) || r.supporting_passage)}&rdquo;
+                    </div>
+                  </div>` : ''}
+
+                  ${(Array.isArray(r.learning_flow || (r.validation && r.validation.learning_flow)) && (r.learning_flow || (r.validation && r.validation.learning_flow)).length) ? `
+                  <div style="margin-top:10px;padding:10px 14px;background:var(--hov);border-radius:8px;border:1px solid var(--bd)">
+                    <div class="mut" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Pedagogical Learning Flow:</div>
+                    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:12px">
+                      ${(r.learning_flow || (r.validation && r.validation.learning_flow)).map((step, idx, arr) => `
+                        <span class="badge" style="background:var(--card);border:1px solid var(--bd);color:var(--fg);padding:4px 9px;font-size:12px">
+                          <b style="color:var(--pri)">${idx+1}.</b> ${esc(step)}
+                        </span>
+                        ${idx < arr.length - 1 ? '<span style="color:var(--mut);font-size:13px">&rarr;</span>' : ''}
+                      `).join('')}
+                    </div>
+                  </div>` : ''}
                 </div>`;
             }
 
@@ -2532,7 +3556,7 @@
             // Step 6: Section Boundaries Card
             let boundsCard = '';
             if (found) {
-                const subtopics = (r.subtopics && r.subtopics.length) ? r.subtopics : (r.related_topics || []);
+                const rawSubtopics = (r.subtopics && r.subtopics.length) ? r.subtopics : (r.related_topics || []);
                 const related = r.related_topics || [];
                 const nextSec = r.next_section_title || 'Next Section';
                 const pStart = r.printed_start_page ?? r.start_page;
@@ -2549,12 +3573,20 @@
                       <div style="font-weight:700;font-size:14px;color:var(--fg);margin-top:2px">${esc(r.section_title || topic)}</div>
                       <div class="mut" style="font-size:11.5px;margin:6px 0 2px">Key Concepts & Subtopics:</div>
                       <div class="loc-subtopics-list">
-                        ${subtopics.map(st => `<span class="loc-subtopic-tag">${esc(st)}</span>`).join('')}
+                        ${rawSubtopics.map(st => {
+                            if (typeof st === 'object' && st !== null) {
+                                const name = esc(st.name || '');
+                                const desc = esc(st.description || '');
+                                const pg = st.printed_page ? ` <span style="opacity:0.75;font-size:10.5px">(Pg ${esc(String(st.printed_page))})</span>` : '';
+                                return `<span class="loc-subtopic-tag" title="${desc}" style="display:inline-flex;align-items:center;gap:3px"><b>${name}</b>${pg}</span>`;
+                            }
+                            return `<span class="loc-subtopic-tag">${esc(st)}</span>`;
+                        }).join('')}
                       </div>
                       ${related.length ? `
                       <div class="mut" style="font-size:11.5px;margin:8px 0 2px">Related Chapter Topics:</div>
                       <div class="loc-subtopics-list">
-                        ${related.map(rt => `<span class="loc-subtopic-tag" style="border-color:var(--pri);color:var(--pri)">${esc(rt)}</span>`).join('')}
+                        ${related.map(rt => `<span class="loc-subtopic-tag" style="border-color:var(--pri);color:var(--pri)">${esc(typeof rt === 'object' && rt !== null ? rt.name || '' : rt)}</span>`).join('')}
                       </div>` : ''}
                     </div>
 
@@ -2568,6 +3600,35 @@
                       </p>
                     </div>
                   </div>
+                </div>`;
+            }
+
+            // Step 6b: Key Mathematical Formulas Card
+            let formulaCard = '';
+            const kf = r.key_formulas || (r.validation && r.validation.key_formulas ? r.validation.key_formulas : []);
+            if (found && Array.isArray(kf) && kf.length) {
+                const fCards = kf.map(item => `
+                    <div style="background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:10px 14px">
+                        <div style="font-weight:700;font-size:12px;color:var(--pri);margin-bottom:4px;display:flex;align-items:center;gap:6px">
+                            ${I('zap', 14)} ${esc(item.title || 'Formula')}
+                        </div>
+                        <div style="font-family:var(--mono, monospace);font-size:13.5px;font-weight:700;color:var(--fg);background:var(--hov);padding:7px 10px;border-radius:6px;border:1px solid var(--bd);margin:4px 0">
+                            ${esc(item.formula || '')}
+                        </div>
+                        ${item.description ? `<div class="mut" style="font-size:11px;margin-top:4px">${esc(item.description)}</div>` : ''}
+                    </div>
+                `).join('');
+
+                formulaCard = `<div class="card" style="border:1px solid var(--bd);margin-bottom:14px">
+                    <div class="row" style="justify-content:space-between;margin-bottom:8px">
+                        <h3 style="display:flex;align-items:center;gap:6px">
+                            ${I('zap', 16)} Key Mathematical Formulas & Core Theorems
+                        </h3>
+                        <span class="badge ok">${kf.length} Formulas Extracted</span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:10px">
+                        ${fCards}
+                    </div>
                 </div>`;
             }
 
@@ -2632,6 +3693,7 @@
                   ${boundsCard}
                 </div>
 
+                ${formulaCard}
                 ${valCard}
                 ${evidence}
                 ${chunks}
@@ -2846,6 +3908,145 @@
             browse() { const fi = $('#fi'); if (fi) fi.click() },
             rmfile() { S.file = null; route() },
             start,
+            courseTab(e) {
+                S.tab.course = e.dataset.tab;
+                route();
+            },
+            locateCourseTopic(e) {
+                const topic = e.dataset.topic || '';
+                if (!topic) return;
+                S.locTopic = topic;
+                toast('Locating topic "' + topic + '" in reference books...');
+                location.hash = '#/books';
+                setTimeout(() => {
+                    A.locateTopic();
+                }, 200);
+            },
+            async extractCourseNow(e) {
+                const docId = e.dataset.doc;
+                const course = e.dataset.course;
+                const force = e.dataset.force === '1' || true;
+                if (!docId || !course) return;
+                e.disabled = true;
+                const orig = e.innerHTML;
+                e.innerHTML = '<span class="loc-spinner"></span> Extracting...';
+                toast('Extracting syllabus details for ' + course + '...');
+                try {
+                    const r = await API.extractCourse(docId, course, null, force);
+                    if (!r.ok) {
+                        toast('Extraction failed: ' + (r.err || 'Request error'), 'er');
+                        e.disabled = false;
+                        e.innerHTML = orig;
+                    } else {
+                        toast('Course syllabus extracted successfully!');
+                        if (r.data) {
+                            if (!S.doc) S.doc = {};
+                            if (!S.doc.details) S.doc.details = {};
+                            const det = r.data;
+                            const cInfo = det.course || {};
+                            if (cInfo.code) S.doc.details[cInfo.code] = det;
+                            if (cInfo.title) S.doc.details[cInfo.title] = det;
+                            S.doc.details[course] = det;
+                        }
+                        await getDoc(docId, true);
+                        route();
+                    }
+                } catch (err) {
+                    toast('Error: ' + String(err), 'er');
+                    e.disabled = false;
+                    e.innerHTML = orig;
+                }
+            },
+            selectCourseInExplorer(e) {
+                const idx = Number(e.dataset.idx);
+                S.explorerIdx = idx;
+                $$('.se-item').forEach(el => el.classList.toggle('active', Number(el.dataset.idx) === idx));
+                const previewEl = $('#sePreviewWrap');
+                if (previewEl && S.doc) {
+                    const c = (S.doc.courses || [])[idx];
+                    if (c) {
+                        const det = detOf(S.doc, c);
+                        const isExt = !!(det && det.units && det.units.length);
+                        previewEl.innerHTML = renderExplorerPreviewHtml(S.doc, c, idx, isExt, det);
+                    }
+                }
+            },
+            useCourse(e) {
+                const docId = e.dataset.doc;
+                const idx = e.dataset.idx;
+                location.hash = `#/course/${docId}/${idx}`;
+            },
+            switchResultsDoc(e) {
+                const docId = e.target.value;
+                if (docId) {
+                    S.explorerIdx = 0;
+                    location.hash = `#/results/${docId}`;
+                }
+            },
+            async extractCourseInExplorer(e) {
+                const docId = e.dataset.doc;
+                const course = e.dataset.course;
+                const idx = e.dataset.idx != null ? Number(e.dataset.idx) : S.explorerIdx;
+                if (!docId || !course) return;
+                if (idx != null) S.explorerIdx = idx;
+                const previewEl = $('#sePreviewWrap');
+                if (previewEl) {
+                    previewEl.innerHTML = `<div style="padding:80px 20px;text-align:center">
+                      <div class="loc-spinner" style="width:36px;height:36px;margin:0 auto 16px"></div>
+                      <h3 style="font-size:16px;margin-bottom:8px">Extracting Syllabus Details...</h3>
+                      <p class="mut" style="font-size:13px">Parsing Units, Topics, Bloom taxonomy, Course Outcomes (COs), and Prescribed Books.</p>
+                    </div>`;
+                }
+                toast('Extracting syllabus details for ' + course + '...');
+                try {
+                    const r = await API.extractCourse(docId, course, null, true);
+                    if (!r.ok) {
+                        toast('Extraction failed: ' + (r.err || 'Request error'), 'er');
+                        route();
+                    } else {
+                        toast('Syllabus extracted successfully!');
+                        if (r.data) {
+                            if (!S.doc) S.doc = {};
+                            if (!S.doc.details) S.doc.details = {};
+                            const det = r.data;
+                            const cInfo = det.course || {};
+                            if (cInfo.code) S.doc.details[cInfo.code] = det;
+                            if (cInfo.title) S.doc.details[cInfo.title] = det;
+                            S.doc.details[course] = det;
+                        }
+                        await getDoc(docId, true);
+                        if (idx != null) S.explorerIdx = idx;
+                        route();
+                    }
+                } catch (err) {
+                    toast('Error: ' + String(err), 'er');
+                    route();
+                }
+            },
+            async extractAllCoursesInExplorer(e) {
+                const docId = e.dataset.doc;
+                if (!docId) return;
+                e.disabled = true;
+                const orig = e.innerHTML;
+                e.innerHTML = '<span class="loc-spinner"></span> Extracting All...';
+                toast('Running Universal Extraction across all subjects...');
+                try {
+                    const r = await API.extractAllCourses(docId);
+                    if (!r.ok) {
+                        toast('Universal extraction error: ' + (r.err || 'Request failed'), 'er');
+                        e.disabled = false;
+                        e.innerHTML = orig;
+                    } else {
+                        toast(`Universal extraction completed! Processed all subjects.`);
+                        await getDoc(docId, true);
+                        route();
+                    }
+                } catch (err) {
+                    toast('Error: ' + String(err), 'er');
+                    e.disabled = false;
+                    e.innerHTML = orig;
+                }
+            },
             pickBooks() { const fi = $('#bkfi'); if (fi) fi.click() },
             rmBook(e) { const i = +e.dataset.i; S.bookFiles = S.bookFiles.filter((_, j) => j !== i); route() },
             locReset() { S.locResult = null; S.locError = null; route() },
@@ -2859,28 +4060,17 @@
                 route();
             },
             async loadDemoBooks() {
-                S.locTopic = 'Eigenvalues and Eigenvectors';
-                S.locValidate = true;
-                S.locBusy = true;
-                route();
-                setTimeout(() => {
-                    S.locResult = MOCK('/books/locate-topic');
-                    S.locBusy = false;
-                    toast('Loaded sample reference books');
-                    route();
-                }, 400);
+                S.locTopic = 'Cayley-Hamilton Theorem';
+                S.locValidate = false;
+                toast('Searching 3 reference books for "' + S.locTopic + '"...');
+                await A.locateTopic();
             },
             async locateTopic() {
                 if (!S.locTopic || !S.locTopic.trim() || S.locBusy) return;
-                // If user hasn't uploaded files, use demo books for instant exploration
-                if (!S.bookFiles.length) {
-                    toast('No files uploaded — loading 3 reference books demo');
-                    return A.loadDemoBooks();
-                }
                 S.locBusy = true; S.locError = null; S.locResult = null; route();
                 try {
-                    const r = await API.locateTopic(S.bookFiles, S.locTopic.trim(), S.locValidate);
-                    if (!r.ok) { S.locError = { title: 'Locator failed', msg: r.err || 'Request failed' }; toast('Locator failed', 'er'); }
+                    const r = await API.locateTopic(S.bookFiles || [], S.locTopic.trim(), S.locValidate);
+                    if (!r.ok) { S.locError = { title: 'Locator failed', msg: r.err || 'Request failed' }; toast('Locator failed: ' + (r.err || ''), 'er'); }
                     else { S.locResult = r.data; toast('Topic located successfully'); }
                 } catch (e) { S.locError = { title: 'Unexpected error', msg: String(e) }; toast('Locator crashed', 'er'); }
                 finally { S.locBusy = false; route(); }

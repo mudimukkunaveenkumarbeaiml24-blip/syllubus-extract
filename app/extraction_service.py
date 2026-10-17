@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import re
 from typing import Any, Dict, List, Tuple
 
@@ -92,7 +93,7 @@ def clean_and_heal_text(text: str) -> str:
 
 def _split_subtopics(text: str) -> List[str]:
     """
-    Extracts nested subtopics from a topic phrase if it contains commas, colons, or dashes.
+    Extracts nested subtopics from a topic phrase if it contains commas, colons, parentheses, or slashes.
     """
     if not text:
         return []
@@ -101,19 +102,59 @@ def _split_subtopics(text: str) -> List[str]:
     m_colon = re.match(r'^([^:]{3,40}):\s*([^\n\r]+)$', text)
     if m_colon:
         after_colon = m_colon.group(2).strip()
-        if ',' in after_colon:
-            subs = [s.strip(' ,;.') for s in after_colon.split(',') if len(s.strip(' ,;.')) >= 2]
-            return subs
+        if ',' in after_colon or ';' in after_colon:
+            subs = [s.strip(' ,;.') for s in re.split(r'[,;]', after_colon) if len(s.strip(' ,;.')) >= 2]
+            if subs:
+                return subs
         elif len(after_colon) >= 3:
             return [after_colon]
 
-    # If topic has commas and length > 25: e.g. "BigData Analytics, Cloud Computing, Embedded Systems"
-    if ',' in text and len(text) > 25:
+    # If topic has parentheses with items: "Topic (item1, item2, item3)" or "Topic (item1 / item2)"
+    m_paren = re.search(r'\(([^)]{3,})\)', text)
+    if m_paren:
+        inside = m_paren.group(1).strip()
+        if any(sep in inside for sep in [',', '/', ';']):
+            subs = [s.strip(' ,;./') for s in re.split(r'[,;/]', inside) if len(s.strip(' ,;./')) >= 2 and s.strip().lower() != 'etc']
+            if len(subs) >= 2:
+                return subs
+
+    # If topic has slashes: "Topic 1 / Topic 2"
+    if ' / ' in text or ' /' in text:
+        subs = [s.strip(' ,;./') for s in text.split('/') if len(s.strip(' ,;./')) >= 2]
+        if len(subs) >= 2:
+            return subs
+
+    # If topic has commas and length > 20: e.g. "BigData Analytics, Cloud Computing, Embedded Systems"
+    if ',' in text and len(text) > 20:
         subs = [s.strip(' ,;.') for s in text.split(',') if len(s.strip(' ,;.')) >= 2]
         if len(subs) >= 2:
             return subs
 
     return []
+
+
+def _parse_book_metadata(text: str) -> Dict[str, Any]:
+    """Extracts author, publisher, edition, and year from a textbook or reference book string."""
+    b_year = None
+    m_yr = re.search(r'\b(19\d{2}|20\d{2})\b', text)
+    if m_yr:
+        b_year = int(m_yr.group(1))
+
+    b_edition = ""
+    m_ed = re.search(r'(?i)\b(\d+(?:st|nd|rd|th)?\s+edition|\([I|V|X]+\s+edition\)|edition\s+\d+|[I|V|X]+\s+edition)\b', text)
+    if m_ed:
+        b_edition = m_ed.group(1).strip()
+
+    b_pub = ""
+    m_pub = re.search(r'(?i)(Oxford\s*University\s*Press|Cambridge\s*University\s*Press|Pearson|McGraw\s*Hill|Tata\s*McGraw\s*Hill|Prentice\s*Hall|PHI|Wiley|Springer|Harper\s*and\s*Row(?:\s*Publications)?|SCM\s*Publishers)', text)
+    if m_pub:
+        b_pub = m_pub.group(1).strip()
+
+    return {
+        "edition": b_edition,
+        "year": b_year,
+        "publisher": b_pub
+    }
 
 
 def _infer_topic_bloom(text: str) -> str:
@@ -304,13 +345,20 @@ def parse_topics_and_subtopics(unit_text: str, unit_num: int = 1, page_num: int 
     return _build_topic_objects(topics_raw, unit_num, page_num)
 
 # Flexible regex for academic course codes across all universities worldwide:
-# e.g., 26CE101T, 26CE101P, 3BSC103, CSBB 103, SMS 2101, CES 2101, CSE1007, ICT-101T, CS801, AMA101, DHS101, 18CS32, PCC-CS301, MC202
-CODE_REGEX = r'(?:[A-Z0-9]{1,4}[-\s]?)?[A-Z]{2,6}[-\s]?[0-9]{2,5}[A-Z]?'
+# e.g., 34121B01, 35021P22, 26CE101T, 26CE101P, 3BSC103, CSBB 103, SMS 2101, CES 2101, CSE1007, ICT-101T, CS801, AMA101, DHS101, 18CS32, 21CS51, PCC-CS301, MC202
+CODE_REGEX = (
+    r'(?:'
+    r'[0-9]{2,6}[A-Z]{1,4}[0-9]{1,4}[A-Z0-9]*'  # 34121B01, 35021P22, 21CS51, 18CS32, 20MA101
+    r'|[A-Z]{2,6}[-\s]?[0-9]{2,5}[A-Z0-9]*'     # AMA101, CSE1007, CS101, SMS 2101, CES 2101
+    r'|[A-Z]{1,4}[0-9]{2,5}[A-Z]?'              # M101, CS801, CS41
+    r'|(?:PCC|PEC|BSC|ESC|HSMC|AEC|OEC|MC|VAC|CC|FC|PROJ|INT|OE|MDM|VSEC|IKS|VEC|RM|OJT|CEA|CCA)[-\s][A-Z0-9]{2,8}'
+    r')'
+)
 
 # Standard academic course categories (AICTE / UGC / NEP / International)
 CAT_REGEX = (
     r'(?:PCC|PEC|BSC|ESC|OE|MDM|VSEC|HSMC|AEC|IKS|VEC|RM|OJT|CEA|CCA|'
-    r'PC|PE|BS|ES|MC|HS|EEC|OEC|PROJ|PCC-CS|PEC-CS|ESC-CS|HSSM|CEP|SEC|CC|VAC)'
+    r'PC|PE|BS|ES|MC|HS|EEC|OEC|PROJ|PCC-CS|PEC-CS|ESC-CS|HSSM|CEP|SEC|CC|VAC|FC)'
 )
 
 INVALID_TITLES_EXACT = {
@@ -329,7 +377,8 @@ INVALID_TITLES_EXACT = {
     'MEDIUM', 'HIGH', 'LOW', 'PROGRAM', 'PROGRAMME', 'ACADEMIC YEAR', 'BATCH', 'OBJECTIVES',
     'COURSE CONTENT', 'COURSE OUTCOME', 'COURSE OBJECTIVE', 'SYLLABUS', 'DETAILED SYLLABI',
     'B.TECH', 'B.E.', 'M.TECH', 'MCA', 'B.SC', 'M.SC', 'DEGREE', 'BRANCH', 'DEPARTMENT',
-    'EXPECTED COURSE OUTCOME', 'STUDENT LEARNING OUTCOMES', 'SLO', 'TEXT BOOK', 'TEXT BOOKS', 'REFERENCE BOOKS'
+    'EXPECTED COURSE OUTCOME', 'STUDENT LEARNING OUTCOMES', 'SLO', 'TEXT BOOK', 'TEXT BOOKS', 'REFERENCE BOOKS',
+    'POINTS, HEADER', 'SPACING 18', 'SPACING'
 }
 
 
@@ -361,7 +410,10 @@ def clean_course_title(raw_title: str) -> str:
 JUNK_CODE_PREFIXES = {
     "EXPERIMENT", "REGULATION", "ISO", "SDG", "SHA", "ESP", "STM", "RL", "ADXL",
     "THE", "RJ", "IKS", "CHOICE", "ANNEXURE", "APPENDIX", "MODULE", "UNIT", "TOTAL",
-    "SEMESTER", "GROUP", "OPTION", "BASKET", "SCHEME", "SECTION", "VERSION"
+    "SEMESTER", "GROUP", "OPTION", "BASKET", "SCHEME", "SECTION", "VERSION",
+    "SPACING", "POINTS", "HEADER", "FOOTER", "PAGE", "TABLE", "CURRICULUM", "HOURS",
+    "PERIODS", "CREDITS", "MARKS", "COLUMN", "ROW", "PREAMBLE", "OBJECTIVE", "OUTCOME",
+    "DESIGNER", "FACULTY", "DEPARTMENT", "CAMPUS", "COLLEGE", "UNIVERSITY", "BATCH"
 }
 
 def is_invalid_course_title(title: str) -> bool:
@@ -370,11 +422,13 @@ def is_invalid_course_title(title: str) -> bool:
     t_up = title.upper()
     if t_up in INVALID_TITLES_EXACT:
         return True
-    if any(junk in t_up for junk in ["SDG NO.", "CHOICE BASED CREDIT SYSTEM", "SYLLABUS VERSION", "ANALOG TO DIGITAL CONVERTER AND DIGITAL TO ANALOG CONVERTER", "OF 30 / STUDENTS", "SATHYABAMA"]):
+    if re.search(r'\b(?:PO|CO|PSO|PEO|LO|EO)\s*\d+', t_up):
+        return True
+    if any(junk in t_up for junk in ["SDG NO.", "CHOICE BASED CREDIT SYSTEM", "SYLLABUS VERSION", "ANALOG TO DIGITAL CONVERTER AND DIGITAL TO ANALOG CONVERTER", "OF 30 / STUDENTS", "SATHYABAMA", "POINTS, HEADER", "SPACING 18"]):
         return True
     if re.match(r'^(?:SEMESTER\s+[IVX0-9]+|GROUP\s+[IVX0-9]+|BATCH\s+\d+|OPTION\s+[A-Z]|BASKET\s+FOR|SCHEME\s+OF|SPECIALI[SZ]ATION\s+IN|PO\s*\d+|CO\s*\d+|PSO\s*\d+|PEO\s*\d+)\b', t_up):
         return True
-    if re.match(r'^(?:TABLE\s+OF\s+CONTENTS|INDEX|LIST\s+OF|NOTE|DISCLAIMER|DECLARATION|PREFACE)\b', t_up):
+    if re.match(r'^(?:TABLE\s+OF\s+CONTENTS|INDEX|LIST\s+OF|NOTE|DISCLAIMER|DECLARATION|PREFACE|MAPPING\s+WITH|PROGRAMME\s+SPECIFIC|COURSE\s+ARTICULATION)\b', t_up):
         return True
     return False
 
@@ -383,13 +437,18 @@ def is_invalid_course_code(code: str) -> bool:
     if not code:
         return True
     c_clean = str(code).strip()
+    if len(c_clean) < 2 or len(c_clean) > 25:
+        return True
+    # Disallow PO11 PO12, CO1, PSO2, etc.
+    if re.search(r'\b(?:PO|CO|PSO|PEO|LO|EO)\s*\d+', c_clean, re.I):
+        return True
     c_up = re.sub(r'[\s\-_]', '', c_clean).upper()
     for prefix in JUNK_CODE_PREFIXES:
         if c_clean.upper().startswith(prefix) or c_up.startswith(prefix):
             return True
     if re.match(r'^(?:PO\d+|CO\d+|PSO\d+|PEO\d+|EO\d+|SR|SNO|SRNO|NO|TOTAL|CREDITS|HOURS|PAGE|SEM|MARKS|CODE|SUBCODE|PAPER|COURSE|EXPERIMENT\s*\d+|REGULATION\s*\d+)$', c_up):
         return True
-    if c_up in {'SHA256', 'ESP32', 'STM32', 'RL78', 'ADXL345', 'THE8051', 'RJ45', 'ISO9000', 'ISO9001', 'REGULATION2021', 'REGULATION2023', 'IKS'}:
+    if c_up in {'SHA256', 'ESP32', 'STM32', 'RL78', 'ADXL345', 'THE8051', 'RJ45', 'ISO9000', 'ISO9001', 'REGULATION2021', 'REGULATION2023', 'IKS', 'SPACING18'}:
         return True
     return False
 
@@ -514,12 +573,28 @@ def detect_courses_deterministic(pages_text: str) -> List[Dict[str, Any]]:
                 if not is_invalid_course_code(c_code) and not is_invalid_course_title(c_title):
                     add_course(code=c_code, title=c_title, page_num=p, credits_val=c_credits)
 
-            # Two lines: Line i is Code (e.g. CSE1007), Line i+1 is Title (e.g. JAVA PROGRAMMING), followed by L T P
-            if re.match(r'^(' + CODE_REGEX + r')$', line) and i + 1 < len(lines):
-                next_l = lines[i + 1]
-                if not is_invalid_course_title(next_l) and re.match(r'^[A-Za-z][A-Za-z0-9\s,\-\(\)\&/\.\']{3,80}$', next_l):
-                    if i + 2 < len(lines) and re.search(r'(?i)\bL\s+T\s+P\b', lines[i + 2]):
-                        add_course(code=line, title=next_l, page_num=p)
+            # Two/Three lines: Line i is Code (e.g. 34121B01 or CSE1007), Line i+1 is Title (possibly wrapped to i+2), followed by syllabus cues
+            if re.match(r'^(' + CODE_REGEX + r')$', line) and not is_invalid_course_code(line):
+                title_parts = []
+                j = i + 1
+                while j < len(lines) and j <= i + 3:
+                    cand_l = lines[j]
+                    if re.match(r'^(?:Category|L|T|P|Credit|Credits|Hours|Pre-?requisite|Preamble|Premable|Course\s*Objectives?|Syllabus|1\.|=====)', cand_l, re.I):
+                        break
+                    if is_invalid_course_title(cand_l):
+                        break
+                    title_parts.append(cand_l)
+                    j += 1
+                
+                if title_parts:
+                    full_title = clean_course_title(' '.join(title_parts))
+                    following_snippet = '\n'.join(lines[j:min(len(lines), j+8)])
+                    has_syllabus_cue = bool(re.search(
+                        r'(?i)\b(Category|L\s*T\s*P|Credit|Credits|Preamble|Premable|Course\s*Objectives?|Prerequisites?|Prerequisite|Syllabus|Hours)\b',
+                        following_snippet
+                    ))
+                    if has_syllabus_cue and not is_invalid_course_title(full_title):
+                        add_course(code=line, title=full_title, page_num=p)
 
             # Code - Title or Code : Title
             m_inline = re.match(r'^(' + CODE_REGEX + r')\s*[\-–:\|]\s*([A-Za-z][A-Za-z0-9\s,\-\(\)\&/\.\']{3,80})$', line)
@@ -707,10 +782,17 @@ def locate_course_boundaries(
         # Check if page is an index table page
         all_codes_on_page = re.findall(CODE_REGEX, p_text)
         has_deep_syllabus = bool(re.search(
-            r'\b(abstract\s*syllabus|unit\s*[:\.\-_]?\s*[i|1]|module\s*[:\.\-_]?\s*1|course\s*objectives?|expected\s*course\s*outcome|course\s*outcomes?|preamble|pre-requisite)\b',
+            r'\b(abstract\s*syllabus|unit\s*[:\.\-_]?\s*(?:[ivx0-9]+|1)|module\s*[:\.\-_]?\s*(?:[ivx0-9]+|1)|course\s*objectives?|expected\s*course\s*outcome|course\s*outcomes?|preamble|premable)\b',
             p_lower
         ))
-        is_index_table = (len(all_codes_on_page) >= 3 and not has_deep_syllabus)
+        is_index_table = (
+            re.search(r'\b(curriculum|scheme\s+of\s+teaching|scheme\s+of\s+examination|offering\s+dept|sl\.\s*no)\b', p_lower) is not None
+            or (len(all_codes_on_page) >= 3 and not has_deep_syllabus)
+        )
+
+        lines_p = [l.strip() for l in p_text.splitlines() if l.strip()]
+        top_lines = ' '.join(lines_p[:8]).upper()
+        top_condensed = re.sub(r'[\s\-_]', '', top_lines)
 
         score = 0
         if code_matched:
@@ -720,11 +802,27 @@ def locate_course_boundaries(
         elif token_ratio >= 0.4:
             score += 20
 
-        if has_deep_syllabus or (has_detail_markers and not is_index_table):
+        # High bonus if code or title appears at the very top of the page (course header)
+        if clean_code and clean_code in top_condensed:
+            score += 150
+        elif any(w.upper() in top_lines for w in title_tokens[:3]):
             score += 100
-            detail_candidates.append((score, p_num))
-        else:
+
+        # Deep syllabus markers bonus
+        if re.search(r'\b(course\s*outcomes?|expected\s*course\s*outcome|course\s*objectives?|preamble|premable)\b', p_lower):
+            score += 200
+        if re.search(r'\b(syllabus|text\s*books?|reference\s*books?|references)\b', p_lower):
+            score += 100
+
+        if is_index_table:
+            score -= 150
             index_candidates.append((score, p_num))
+        else:
+            if has_deep_syllabus or has_detail_markers:
+                score += 100
+                detail_candidates.append((score, p_num))
+            else:
+                index_candidates.append((score, p_num))
 
     # Resolve detected index page
     detected_index = index_page
@@ -736,7 +834,7 @@ def locate_course_boundaries(
     # Resolve detected detail start page
     detail_start = None
     if detail_candidates:
-        detail_candidates.sort(key=lambda x: (x[0], -x[1]), reverse=True)
+        detail_candidates.sort(key=lambda x: x[0], reverse=True)
         detail_start = detail_candidates[0][1]
 
     if not detail_start:
@@ -866,10 +964,7 @@ def detect_courses(pages_text: str) -> Dict[str, Any]:
             ]
         }
 
-    print("=" * 70)
-    print("SYLLABUSIQ - UNIVERSAL COURSE EXTRACTION")
-    print("=" * 70)
-    print(f"Total syllabus text length: {len(pages_text)} characters")
+    logger.info("Universal course extraction initiated (syllabus text length: %d chars)", len(pages_text))
 
     # 1. Universal deterministic extraction
     raw_courses = detect_courses_deterministic(pages_text)
@@ -878,7 +973,7 @@ def detect_courses(pages_text: str) -> Dict[str, Any]:
     # 2. If nothing detected (e.g. rare non-standard structure), fallback to LLM
     if not raw_courses:
         try:
-            print("[AI] Running LLM Course Detection Fallback...")
+            logger.info("Running LLM Course Detection Fallback...")
             prompt = build_course_detection_prompt(pages_text[:16000])
             raw_response = generate_text(
                 prompt=prompt,
@@ -934,8 +1029,7 @@ def detect_courses(pages_text: str) -> Dict[str, Any]:
         )
     )
 
-    print(f"[COURSES] Successfully detected {len(final_courses)} courses dynamically across all pages")
-    print("=" * 70)
+    logger.info("Successfully detected %d courses dynamically across all pages", len(final_courses))
 
     return {
         "courses": final_courses,
@@ -1562,10 +1656,88 @@ def extract_course_details_deterministic(
                 "topics": cleaned_topics
             })
 
-    # 2. Abstract Syllabus / Course Content / Colon Subtopics
+    # 2. Syllabus block with Upper-case / Colon Unit Headings (e.g. MATRICES:, DIFFERENTIAL CALCULUS:, etc.)
+    if not units_list:
+        m_syl = re.search(
+            r'(?i)\b(?:SYLLABUS|COURSE\s*CONTENT|CONTENT|TOPICS|LIST\s*OF\s*EXPERIMENTS?|EXPERIMENTS?|LABORATORY\s*EXERCISES?)\b\s*[:\n]?(.*?)(?=(?:\b(?:TEXT\s*BOOKS?|TEXT\s*BOOK\(S\)|REFERENCES?|REFERENCE\s*BOOKS?|COURSE\s*DESIGNERS?|TOTAL\s*PERIODS?|TOTAL\s*HOURS|COURSE\s*OUTCOMES?|Expected\s*Course\s*Outcome)\b|$))',
+            c_text, re.DOTALL
+        )
+        if m_syl:
+            syl_body = m_syl.group(1).strip()
+            lines = syl_body.splitlines()
+            unit_candidates = []
+            curr_title = None
+            curr_lines = []
+            
+            for l in lines:
+                line_s = l.strip()
+                if not line_s or line_s.isdigit() or line_s.startswith('====='):
+                    continue
+                m_colon = re.match(r'^([A-Z][A-Za-z0-9\s,\-–&/]{2,70}):\s*(.*)$', line_s)
+                m_caps_prefix = re.match(r'^([A-Z\s]{4,35})\s+([A-Z][a-z].*)$', line_s)
+                is_all_caps = (
+                    line_s.isupper() 
+                    and len(line_s) >= 3 
+                    and len(line_s) <= 65 
+                    and not re.search(r'[\.\?!]$', line_s) 
+                    and not re.search(r'\b(HOURS|HRS|CREDITS|PAGE|SEMESTER|THEORY|LAB|PRACTICAL)\b', line_s)
+                    and not is_invalid_course_title(line_s)
+                )
+                
+                cand_heading = None
+                rem_line = ""
+                if m_colon:
+                    cand_heading = m_colon.group(1).strip()
+                    rem_line = m_colon.group(2).strip()
+                elif m_caps_prefix and not any(line_s.upper().startswith(k) for k in ['TEXT', 'REF', 'COURSE']):
+                    cand_heading = m_caps_prefix.group(1).strip()
+                    rem_line = m_caps_prefix.group(2).strip()
+                elif is_all_caps:
+                    cand_heading = line_s
+                    rem_line = ""
+
+                if cand_heading and not any(cand_heading.upper().startswith(k) for k in ['TEXT BOOK', 'REFERENCE', 'COURSE DESIGNER', 'TOTAL', 'SYLLABUS', 'PREAMBLE', 'PREREQUISITE', 'COURSE OBJECTIVE', 'COURSE OUTCOME', 'MAPPING']):
+                    if curr_title:
+                        unit_candidates.append((curr_title, '\n'.join(curr_lines).strip()))
+                    curr_title = cand_heading
+                    curr_lines = [rem_line] if rem_line else []
+                    continue
+
+                if curr_title:
+                    curr_lines.append(line_s)
+            
+            if curr_title:
+                unit_candidates.append((curr_title, '\n'.join(curr_lines).strip()))
+                
+            if unit_candidates:
+                roman_labels = ["UNIT I", "UNIT II", "UNIT III", "UNIT IV", "UNIT V", "UNIT VI", "UNIT VII", "UNIT VIII"]
+                for u_idx, (u_title, u_body) in enumerate(unit_candidates, 1):
+                    cleaned_body = clean_and_heal_text(u_body)
+                    topics = parse_topics_and_subtopics(cleaned_body, unit_num=u_idx, page_num=p0)
+                    if not topics and cleaned_body:
+                        topics.append({
+                            "id": f"u{u_idx}t1",
+                            "text": cleaned_body[:120],
+                            "page": p0,
+                            "bloom": "understand",
+                            "bloom_source": "inferred",
+                            "subtopics": _split_subtopics(cleaned_body[:120])
+                        })
+                    r_lbl = roman_labels[u_idx - 1] if u_idx <= len(roman_labels) else f"UNIT {u_idx}"
+                    units_list.append({
+                        "number": u_idx,
+                        "unit": r_lbl,
+                        "title": clean_and_heal_text(u_title),
+                        "hours": None,
+                        "page": p0,
+                        "text": cleaned_body,
+                        "topics": topics
+                    })
+
+    # 3. Abstract Syllabus / Course Content / Colon Subtopics / Experiments
     if not units_list:
         m_abs = re.search(
-            r'(?i)(?:Abstract\s*syllabus|Abstract|Course\s*Content|Syllabus\s*Content|Topics)\s*[:\n](.*?)(?=(?:References?|Reference\s*Books?|Textbooks?|Suggested\s*Reading|CO/PO|CO-PO|COURSE OUTCOMES?|Expected\s*Course\s*Outcome|===== PAGE|$))',
+            r'(?i)(?:Abstract\s*syllabus|Abstract|Course\s*Content|Syllabus\s*Content|Topics|List\s*of\s*Experiments?|Experiments?|Laboratory\s*Exercises?)\s*[:\n](.*?)(?=(?:References?|Reference\s*Books?|Textbooks?|Suggested\s*Reading|CO/PO|CO-PO|COURSE OUTCOMES?|Expected\s*Course\s*Outcome|$))',
             c_text, re.DOTALL
         )
         if m_abs:
@@ -1591,7 +1763,7 @@ def extract_course_details_deterministic(
                             "page": p0,
                             "bloom": "understand",
                             "bloom_source": "inferred",
-                            "subtopics": []
+                            "subtopics": _split_subtopics(st)
                         })
                     
                     if not topics_objs and chunk_text:
@@ -1601,7 +1773,7 @@ def extract_course_details_deterministic(
                             "page": p0,
                             "bloom": "understand",
                             "bloom_source": "inferred",
-                            "subtopics": []
+                            "subtopics": _split_subtopics(chunk_text[:100])
                         })
                         
                     units_list.append({
@@ -1623,7 +1795,7 @@ def extract_course_details_deterministic(
                         "page": p0,
                         "bloom": "understand",
                         "bloom_source": "inferred",
-                        "subtopics": []
+                        "subtopics": _split_subtopics(st)
                     })
                 if topics_objs:
                     units_list.append({
@@ -1636,7 +1808,7 @@ def extract_course_details_deterministic(
                         "topics": topics_objs
                     })
 
-    # 3. List of experiments / Practicals fallback
+    # 4. List of experiments / Practicals fallback
     if not units_list:
         m_exp = re.search(r'(?i)(?:LIST OF EXPERIMENTS|LABORATORY EXPERIMENTS|PRACTICAL EXERCISES|EXPERIMENTS|PRACTICALS)\s*[:\n](.*?)(?=(?:COURSE OUTCOMES?|CO\s*[1-9]|TEXTBOOKS?|REFERENCES?|CO/PO|CO-PO|TOTAL\s*PERIODS?|===== PAGE|$))', c_text, re.DOTALL)
         if m_exp:
@@ -1668,8 +1840,11 @@ def extract_course_details_deterministic(
 
     # Course Outcomes (COs)
     cos_list = []
-    # Pattern A: Explicit CO1: / CO 1:
-    co_pattern = re.compile(r'(?i)\b(CO\s*([1-9]))\s*[:\-\.]?\s*(.*?)(?=(?:\bCO\s*[1-9]\b|TEXTBOOKS?|TEXT\s*BOOK\(S\)|REFERENCES?|REFERENCE\s*BOOK\(S\)|SUGGESTED\s*READING|CO/PO|CO-PO|COURSE OUTCOMES?|Expected\s*Course\s*Outcome|$))', re.DOTALL)
+    # Pattern A: Explicit CO1: / CO 1: / CO1.
+    co_pattern = re.compile(
+        r'(?i)\b(CO\s*([1-9]))\s*[:\-\.]?\s*(.*?)(?=(?:\bCO\s*[1-9]\b|MAPPING\s*(?:OF|WITH)|PROGRAMME\s*OUTCOMES|COURSE\s*ARTICULATION|TEXTBOOKS?|TEXT\s*BOOK\(S\)|REFERENCES?|REFERENCE\s*BOOK\(S\)|SUGGESTED\s*READING|CO/PO|CO-PO|COURSE OUTCOMES?|Expected\s*Course\s*Outcome|$))',
+        re.DOTALL
+    )
     for co_m in co_pattern.finditer(c_text):
         co_id = f"CO{co_m.group(2)}"
         co_raw_text = co_m.group(3).strip()
@@ -1684,20 +1859,31 @@ def extract_course_details_deterministic(
             bloom_src = "printed"
             co_raw_text = re.sub(r'\s*\b' + re.escape(m_k.group(0)) + r'\b\s*', ' ', co_raw_text).strip()
         else:
-            first_w = co_raw_text.split()[0].lower() if co_raw_text.split() else ""
-            if any(first_w.startswith(k) for k in ["apply", "comput", "calculat", "solv", "implement", "us"]):
-                bloom_val = "apply"
-            elif any(first_w.startswith(k) for k in ["analys", "analyz", "examin", "compar", "contrast", "investigat"]):
-                bloom_val = "analyse"
-            elif any(first_w.startswith(k) for k in ["design", "creat", "develop", "construct", "synthes"]):
-                bloom_val = "create"
-            elif any(first_w.startswith(k) for k in ["evaluat", "assess", "judg", "critiqu"]):
-                bloom_val = "evaluate"
-            elif any(first_w.startswith(k) for k in ["defin", "list", "stat", "recal", "nam", "identif"]):
-                bloom_val = "remember"
-            else:
-                bloom_val = "understand"
-            bloom_src = "inferred"
+            # Check if last word/line is standalone Bloom word: Apply, Understand, Analyze, Create, Evaluate, Remember
+            lines_co = [l.strip() for l in co_raw_text.splitlines() if l.strip()]
+            if lines_co:
+                last_l = lines_co[-1].lower()
+                if last_l in ("apply", "understand", "analyse", "analyze", "evaluate", "create", "remember"):
+                    bloom_val = "analyse" if last_l == "analyze" else last_l
+                    bloom_src = "printed"
+                    lines_co = lines_co[:-1]
+                    co_raw_text = " ".join(lines_co)
+            
+            if bloom_src != "printed":
+                first_w = co_raw_text.split()[0].lower() if co_raw_text.split() else ""
+                if any(first_w.startswith(k) for k in ["apply", "comput", "calculat", "solv", "implement", "us"]):
+                    bloom_val = "apply"
+                elif any(first_w.startswith(k) for k in ["analys", "analyz", "examin", "compar", "contrast", "investigat"]):
+                    bloom_val = "analyse"
+                elif any(first_w.startswith(k) for k in ["design", "creat", "develop", "construct", "synthes"]):
+                    bloom_val = "create"
+                elif any(first_w.startswith(k) for k in ["evaluat", "assess", "judg", "critiqu"]):
+                    bloom_val = "evaluate"
+                elif any(first_w.startswith(k) for k in ["defin", "list", "stat", "recal", "nam", "identif"]):
+                    bloom_val = "remember"
+                else:
+                    bloom_val = "understand"
+                bloom_src = "inferred"
         
         # Clean trailing table numbers/codes like 'TPS3 70 65' or 'CO1 3 2' from outcome text
         co_raw_text = re.sub(r'\s+(?:TPS\d+|[0-9]{2,3}\s+[0-9]{2,3})+$', '', co_raw_text).strip()
@@ -1741,24 +1927,27 @@ def extract_course_details_deterministic(
     all_books_list = []
 
     # Textbooks (including Text Book(s) / Textbooks)
-    m_tb = re.search(r'(?i)(?:TEXTBOOKS?|TEXT\s*BOOKS?|TEXT\s*BOOK\(S\))\s*[:\n](.*?)(?=(?:REFERENCES?|REFERENCE\s*BOOKS?|REFERENCE\s*BOOK\(S\)|SUGGESTED\s*READING|CO/PO|CO-PO|COURSE OUTCOMES?|===== PAGE|$))', c_text, re.DOTALL)
+    m_tb = re.search(
+        r'(?i)(?:TEXTBOOKS?|TEXT\s*BOOKS?|TEXT\s*BOOK\(S\))\s*[:\n](.*?)(?=(?:REFERENCES?|REFERENCE\s*BOOKS?|REFERENCE\s*BOOK\(S\)|SUGGESTED\s*READING|COURSE\s*DESIGNERS?|CO/PO|CO-PO|COURSE OUTCOMES?|===== PAGE|$))',
+        c_text, re.DOTALL
+    )
     if m_tb:
         tb_text = m_tb.group(1).strip()
-        # Splits numbered citations
-        tb_items = re.split(r'\n(?=\s*\d+[\.\)]|\s*\[\d+\])', tb_text)
+        tb_items = re.split(r'\n(?=\s*(?:\[\d+\]|\d+[\.\)]|\d+\s+[A-Z]|https?://))', tb_text)
         for idx, item in enumerate(tb_items, 1):
             clean_item = " ".join(item.strip().split())
-            clean_item = re.sub(r'^\d+[\.\)]\s*', '', clean_item).strip()
-            if len(clean_item) > 5:
+            clean_item = re.sub(r'^(?:\d+[\.\)]\s*|\d+\s+)+', '', clean_item).strip()
+            if len(clean_item) > 5 and not clean_item.upper().startswith("COURSE DESIGNER"):
+                b_meta = _parse_book_metadata(clean_item)
                 book_entry = {
                     "number": idx,
                     "type": "Textbook",
                     "kind": "text",
                     "title": clean_item,
                     "author": "",
-                    "publisher": "",
-                    "edition": "",
-                    "year": "",
+                    "publisher": b_meta.get("publisher", ""),
+                    "edition": b_meta.get("edition", ""),
+                    "year": b_meta.get("year", ""),
                     "isbn": "",
                     "page": p0,
                     "text": clean_item
@@ -1767,24 +1956,28 @@ def extract_course_details_deterministic(
                 all_books_list.append(book_entry)
 
     # References / Reference Books
-    m_ref = re.search(r'(?i)(?:REFERENCES?|REFERENCE\s*BOOKS?|REFERENCE\s*BOOK\(S\)|SUGGESTED\s*READING|SUGGESTED\s*READINGS|RECOMMENDED\s*BOOKS?)\s*[:\n](.*?)(?=(?:TEXTBOOKS?|TEXT\s*BOOK\(S\)|CO/PO|CO-PO|COURSE OUTCOMES?|===== PAGE|$))', c_text, re.DOTALL)
+    m_ref = re.search(
+        r'(?i)(?:REFERENCES?|REFERENCE\s*BOOKS?|REFERENCE\s*BOOK\(S\)|SUGGESTED\s*READING|SUGGESTED\s*READINGS|RECOMMENDED\s*BOOKS?)\s*[:\n](.*?)(?=(?:TEXTBOOKS?|TEXT\s*BOOK\(S\)|COURSE\s*DESIGNERS?|CO/PO|CO-PO|COURSE OUTCOMES?|===== PAGE|$))',
+        c_text, re.DOTALL
+    )
     if m_ref:
         ref_text = m_ref.group(1).strip()
-        ref_items = re.split(r'\n(?=\s*\d+[\.\)]|\s*\[\d+\]|\s*https?://)', ref_text)
+        ref_items = re.split(r'\n(?=\s*(?:\[\d+\]|\d+[\.\)]|\d+\s+[A-Z]|https?://))', ref_text)
         for idx, item in enumerate(ref_items, 1):
             clean_item = " ".join(item.strip().split())
-            clean_item = re.sub(r'^\d+[\.\)]\s*', '', clean_item).strip()
-            if len(clean_item) > 5:
+            clean_item = re.sub(r'^(?:\d+[\.\)]\s*|\d+\s+)+', '', clean_item).strip()
+            if len(clean_item) > 5 and not clean_item.upper().startswith("COURSE DESIGNER"):
                 r_type = "Online Resource" if ("http" in clean_item.lower() or "nptel" in clean_item.lower()) else "Reference Book"
+                b_meta = _parse_book_metadata(clean_item)
                 book_entry = {
                     "number": idx,
                     "type": r_type,
                     "kind": "reference",
                     "title": clean_item,
                     "author": "",
-                    "publisher": "",
-                    "edition": "",
-                    "year": "",
+                    "publisher": b_meta.get("publisher", ""),
+                    "edition": b_meta.get("edition", ""),
+                    "year": b_meta.get("year", ""),
                     "isbn": "",
                     "page": p0,
                     "text": clean_item
@@ -1794,16 +1987,40 @@ def extract_course_details_deterministic(
 
     # CO-PO Matrix
     copo_matrix = {}
-    m_copo = re.search(r'(?i)(?:CO/PO|CO-PO|MAPPING OF COs WITH POs|COURSE ARTICULATION MATRIX)(.*?)(?=(?:TEXTBOOKS?|REFERENCES?|SUGGESTED\s*READING|===== PAGE|$))', c_text, re.DOTALL)
+    m_copo = re.search(
+        r'(?i)(?:CO/PO|CO-PO|MAPPING\s*(?:OF|WITH)\s*(?:COs\s*WITH\s*)?PROGRAMME\s*OUTCOMES|COURSE ARTICULATION MATRIX)(.*?)(?=(?:TEXTBOOKS?|REFERENCES?|SUGGESTED\s*READING|SYLLABUS|===== PAGE|$))',
+        c_text, re.DOTALL
+    )
     if m_copo:
         matrix_text = m_copo.group(1)
-        for line in matrix_text.splitlines():
-            m_co_row = re.search(r'\b(CO[1-9])\b\s*(.*)', line, re.IGNORECASE)
-            if m_co_row:
-                co_label = m_co_row.group(1).upper()
-                vals = re.findall(r'[1-3\-\u2013\u2014✔✓HMLhml]', m_co_row.group(2))
+        tokens = [t.strip() for t in matrix_text.split() if t.strip()]
+        i = 0
+        while i < len(tokens):
+            tok = tokens[i].upper()
+            m_co = re.match(r'^CO([1-9])$', tok)
+            if m_co:
+                co_label = tok
+                i += 1
+                vals = []
+                while i < len(tokens) and not re.match(r'^CO[1-9]$', tokens[i].upper()) and not tokens[i].startswith('S-'):
+                    v = tokens[i]
+                    if v in ('S', 'M', 'L', '1', '2', '3', '--', '-', '–', '—', 'H', '3.0', '2.0', '1.0'):
+                        vals.append(v)
+                    i += 1
                 if vals:
-                    copo_matrix[co_label] = {f"PO{i+1}": vals[i] for i in range(min(12, len(vals)))}
+                    copo_matrix[co_label] = {f"PO{idx+1}": vals[idx] for idx in range(min(12, len(vals)))}
+            else:
+                i += 1
+        
+        # If token stream didn't find rows, fallback to line-based parsing
+        if not copo_matrix:
+            for line in matrix_text.splitlines():
+                m_co_row = re.search(r'\b(CO[1-9])\b\s*(.*)', line, re.IGNORECASE)
+                if m_co_row:
+                    co_label = m_co_row.group(1).upper()
+                    vals = re.findall(r'[1-3\-\u2013\u2014✔✓HMLhmlS]', m_co_row.group(2))
+                    if vals:
+                        copo_matrix[co_label] = {f"PO{idx+1}": vals[idx] for idx in range(min(12, len(vals)))}
 
     course_obj = {
         "code": code_cand,
@@ -1857,9 +2074,7 @@ def extract_course_details(
     Extract complete detailed syllabus information for a single specified course.
     Determines true boundaries dynamically and extracts with instant fast engine.
     """
-    print("=" * 70)
-    print(f"TASK 2: SINGLE COURSE DETAILED EXTRACTION -> {course_query}")
-    print("=" * 70)
+    logger.info("Single course detailed extraction: %s", course_query)
 
     # 1. Dynamically focus text on the exact course boundaries
     section_text, detail_pages = extract_course_section_text(
@@ -1869,8 +2084,7 @@ def extract_course_details(
         all_courses=all_courses
     )
     resolved_start = detail_pages[0] if detail_pages else (start_page or 1)
-    print(f"[BOUNDARY] Course located on pages: {detail_pages} (detail start: {resolved_start})")
-    print(f"Dynamically extracted section text length: {len(section_text)} characters")
+    logger.info("Course located on pages: %s (detail start: %s, text length: %d chars)", detail_pages, resolved_start, len(section_text))
 
     # 2. Universal deterministic extraction
     fast_result = extract_course_details_deterministic(
@@ -1879,21 +2093,22 @@ def extract_course_details(
         detail_pages=detail_pages
     )
 
-    # 3. If units or books were not captured deterministically, run AI prompt for this course section
-    if not fast_result.get("units") and not fast_result.get("books"):
-        try:
-            print("[AI] Running LLM Course Detail extraction...")
-            prompt = build_course_detail_prompt(course_query, section_text[:8000])
-            raw_response = generate_text(
-                prompt=prompt,
-                system_prompt=COURSE_DETAIL_SYSTEM_PROMPT,
-                timeout_seconds=30.0,
-            )
-            ai_data = parse_and_clean_json(raw_response)
-            if ai_data.get("units") or ai_data.get("books"):
-                fast_result = ai_data
-        except Exception as exc:
-            logger.warning(f"[FALLBACK] AI course detail extraction error: {exc}")
+    # 3. If units or books were not captured deterministically, attempt AI prompt only if explicitly enabled
+    if os.getenv("ENABLE_LLM_DETAIL_FALLBACK", "false").lower() == "true":
+        if not fast_result.get("units") and not fast_result.get("books") and len(section_text.strip()) > 300:
+            try:
+                logger.info("Running LLM Course Detail extraction...")
+                prompt = build_course_detail_prompt(course_query, section_text[:4000])
+                raw_response = generate_text(
+                    prompt=prompt,
+                    system_prompt=COURSE_DETAIL_SYSTEM_PROMPT,
+                    timeout_seconds=5.0,
+                )
+                ai_data = parse_and_clean_json(raw_response)
+                if ai_data.get("units") or ai_data.get("books"):
+                    fast_result = ai_data
+            except Exception as exc:
+                logger.warning(f"[FALLBACK] AI course detail extraction error: {exc}")
 
     validated_detail = validate_course_detail(fast_result, course_query, default_pages=detail_pages)
     if detail_pages:

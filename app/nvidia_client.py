@@ -82,7 +82,10 @@ def generate_text(
         last_exception = None
         url = f"{NVIDIA_BASE_URL.rstrip('/')}/chat/completions"
 
+        network_down = False
         for tier_idx, tier in enumerate(candidate_tiers, 1):
+            if network_down:
+                break
             tier_name = tier["name"]
             active_model = tier["model"]
             active_key = tier["key"]
@@ -166,6 +169,11 @@ def generate_text(
                         or "too many requests" in err_str
                         or "quota" in err_str
                     )
+
+                    if any(conn_err in err_str for conn_err in ["getaddrinfo", "10054", "connection refused", "connecterror", "name resolution"]):
+                        logger.warning(f"NVIDIA endpoint unreachable ({e}); aborting remaining tiers.")
+                        network_down = True
+                        break
 
                     if is_rate_limit and attempt == 0:
                         logger.warning(

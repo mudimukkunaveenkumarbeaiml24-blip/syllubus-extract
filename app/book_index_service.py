@@ -68,7 +68,11 @@ def _get_embedder():
         import torch
         from sentence_transformers import SentenceTransformer
         torch.set_num_threads(os.cpu_count() or 4)
-        _embedder = SentenceTransformer("all-MiniLM-L6-v2")
+        os.environ["HF_HUB_OFFLINE"] = "1"
+        try:
+            _embedder = SentenceTransformer("all-MiniLM-L6-v2", local_files_only=True)
+        except Exception:
+            _embedder = SentenceTransformer("all-MiniLM-L6-v2")
     return _embedder
 
 
@@ -118,6 +122,7 @@ class Chunk:
     text: str
     heading: Optional[str] = None
     heading_level: int = 0
+    is_front_matter: bool = False
 
 
 @dataclass
@@ -146,6 +151,13 @@ class BookIndex:
         if self.median_page_offset > 0 and pdf_page > self.median_page_offset and pdf_page <= self.total_pages:
             return pdf_page - self.median_page_offset
         return pdf_page
+
+    def get_printed_label(self, pdf_page: int) -> str:
+        if self.page_labels and pdf_page in self.page_labels:
+            return str(self.page_labels[pdf_page])
+        p = self.get_printed_page(pdf_page)
+        return str(p)
+
 
 
 # ---------------------------------------------------------------------------
@@ -276,8 +288,16 @@ def _chunk_pages(
             headings_by_page[page_num] = page_headings
             current_level, current_heading = page_headings[-1]
 
+        # Detect front matter (preface, contents, copyright, title pages)
+        is_front = False
+        if page_num <= 20:
+            low_text = text.lower()
+            if any(fm in low_text for fm in ["table of contents", "contents", "preface", "all rights reserved", "printed in", "published by", "isbn"]):
+                if "contents" in low_text or "preface" in low_text or "isbn" in low_text or "copyright" in low_text:
+                    is_front = True
+
         if len(text) <= target_chars:
-            chunks.append(Chunk(cid, page_num, text, current_heading, current_level))
+            chunks.append(Chunk(cid, page_num, text, current_heading, current_level, is_front_matter=is_front))
             cid += 1
         else:
             start = 0
@@ -290,6 +310,7 @@ def _chunk_pages(
                         text[start:end],
                         current_heading,
                         current_level,
+                        is_front_matter=is_front,
                     )
                 )
                 cid += 1
@@ -330,40 +351,60 @@ def _embed_texts(texts: List[str]) -> np.ndarray:
     return vecs.astype("float32")
 
 
-def _extract_toc_and_page_mapping(pdf_path: str, total_pages: int) -> Tuple[List[Dict[str, Any]], Dict[int, int], int]:
+def _extract_toc_and_page_mapping(pdf_path: str, total_pages: int) -> Tuple[List[Dict[str, Any]], Dict[int, int], int, Dict[int, str]]:
     try:
         import fitz
         doc = fitz.open(pdf_path)
     except Exception as exc:
         logger.warning("Could not open %s for TOC: %s", pdf_path, exc)
-        return [], {}, 0
+        return [], {}, 0, {}
 
-    page_to_printed = {}
-    offsets = []
+    page_to_printed: Dict[int, int] = {}
+    page_labels: Dict[int, str] = {}
+    offsets: List[int] = []
 
-    # Fast sampling of pages to find printed numbers in headers/footers
-    n_pages = min(total_pages, len(doc))
-    for p_idx in range(n_pages):
+    sample_pages = min(80, len(doc))
+    for p_idx in range(sample_pages):
+        pdf_p = p_idx + 1
         try:
             text = doc[p_idx].get_text()
             lines = [l.strip() for l in text.splitlines() if l.strip()]
+
+            # Detect compound section-page labels like "I - 1.21" or "1.21"
+            for l in lines[:4] + lines[-3:]:
+                m_comp = re.search(r"\b([IVXLCDM]+\s*[-–]\s*\d+\.\d+)\b", l)
+                if m_comp:
+                    page_labels[pdf_p] = m_comp.group(1).replace(" ", "")
+                    break
+
             for l in lines[:3] + lines[-3:]:
                 if re.fullmatch(r"\d{1,4}", l):
                     val = int(l)
                     if 1 <= val <= total_pages:
-                        page_to_printed[p_idx + 1] = val
-                        offsets.append((p_idx + 1) - val)
+                        offsets.append(pdf_p - val)
                         break
         except Exception:
             pass
 
-    median_offset = sorted(offsets)[len(offsets) // 2] if offsets else 0
+    import collections
+    dominant_offset = 0
+    if offsets:
+        cnts = collections.Counter(offsets)
+        top_offset, top_freq = cnts.most_common(1)[0]
+        # Only adopt dominant offset if it has solid support (at least 3 pages or 10% of samples)
+        if top_freq >= 3 or top_freq >= len(offsets) * 0.15:
+            dominant_offset = top_offset
+
+    if dominant_offset > 0:
+        for pdf_p in range(1, total_pages + 1):
+            if pdf_p > dominant_offset:
+                page_to_printed[pdf_p] = pdf_p - dominant_offset
 
     def printed_of(p: int) -> int:
         if p in page_to_printed:
             return page_to_printed[p]
-        if median_offset > 0 and p > median_offset:
-            return p - median_offset
+        if dominant_offset > 0 and p > dominant_offset:
+            return p - dominant_offset
         return p
 
     raw_toc = []
@@ -402,7 +443,7 @@ def _extract_toc_and_page_mapping(pdf_path: str, total_pages: int) -> Tuple[List
             "printed_end": printed_of(max(int(p), int(end_p))),
         })
 
-    return toc_entries, page_to_printed, median_offset
+    return toc_entries, page_to_printed, dominant_offset, page_labels
 
 
 def _save_to_disk(index: BookIndex) -> None:
@@ -417,6 +458,7 @@ def _save_to_disk(index: BookIndex) -> None:
         "headings_by_page": {str(k): v for k, v in index.headings_by_page.items()},
         "toc_entries": index.toc_entries,
         "page_to_printed": {str(k): v for k, v in index.page_to_printed.items()},
+        "page_labels": {str(k): v for k, v in index.page_labels.items()},
         "median_page_offset": index.median_page_offset,
         "pdf_type": index.pdf_type,
         "extraction_method": index.extraction_method,
@@ -461,8 +503,8 @@ def _load_from_disk(file_hash: str) -> Optional[BookIndex]:
         return None
 
     try:
-        meta = json.loads(meta_p.read_text(encoding="utf-8"))
-        chunks_raw = json.loads(chunks_p.read_text(encoding="utf-8"))
+        meta = json.loads(meta_p.read_text(encoding="utf-8", errors="ignore"))
+        chunks_raw = json.loads(chunks_p.read_text(encoding="utf-8", errors="ignore"))
         embeddings = np.load(emb_p)
         faiss = _get_faiss()
         faiss_index = faiss.read_index(str(faiss_p))
@@ -500,17 +542,22 @@ def _load_from_disk(file_hash: str) -> Optional[BookIndex]:
     page_to_printed = {
         int(k): v for k, v in (meta.get("page_to_printed") or {}).items()
     }
+    page_labels = {
+        int(k): v for k, v in (meta.get("page_labels") or {}).items()
+    }
     median_offset = meta.get("median_page_offset", 0)
 
-    # Lazily backfill TOC & printed page mappings if missing
-    if not toc_entries and Path(meta.get("path", "")).exists():
+    # Lazily backfill TOC & printed page mappings once if missing or unpopulated
+    if not meta.get("page_mapping_checked") and (not toc_entries or not page_labels) and Path(meta.get("path", "")).exists():
         try:
-            toc_entries, page_to_printed, median_offset = _extract_toc_and_page_mapping(
+            toc_entries, page_to_printed, median_offset, page_labels = _extract_toc_and_page_mapping(
                 meta["path"], meta.get("total_pages", 0)
             )
             meta["toc_entries"] = toc_entries
             meta["page_to_printed"] = {str(k): v for k, v in page_to_printed.items()}
+            meta["page_labels"] = {str(k): v for k, v in page_labels.items()}
             meta["median_page_offset"] = median_offset
+            meta["page_mapping_checked"] = True
             meta_p.write_text(
                 json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8"
             )
@@ -528,6 +575,7 @@ def _load_from_disk(file_hash: str) -> Optional[BookIndex]:
         bm25=bm25,
         embeddings=embeddings,
         headings_by_page=headings_by_page,
+        page_labels=page_labels,
         toc_entries=toc_entries,
         page_to_printed=page_to_printed,
         median_page_offset=median_offset,
@@ -535,6 +583,9 @@ def _load_from_disk(file_hash: str) -> Optional[BookIndex]:
         pdf_type=meta.get("pdf_type", "Text PDF"),
         extraction_method=meta.get("extraction_method", "PyMuPDF"),
     )
+
+
+load_from_disk = _load_from_disk
 
 
 # ---------------------------------------------------------------------------
@@ -606,7 +657,7 @@ def build_index(
     pdf_type_label = "Scanned PDF" if is_scanned else "Text PDF"
     extraction_method_label = "OCR (PaddleOCR / Tesseract)" if is_scanned else "PyMuPDF"
 
-    toc_entries, page_to_printed, median_offset = _extract_toc_and_page_mapping(
+    toc_entries, page_to_printed, median_offset, page_labels = _extract_toc_and_page_mapping(
         str(path), int(extraction.get("total_pages", len(pages)))
     )
 
@@ -621,6 +672,7 @@ def build_index(
         bm25=bm25,
         embeddings=embeddings,
         headings_by_page=headings_by_page,
+        page_labels=page_labels,
         toc_entries=toc_entries,
         page_to_printed=page_to_printed,
         median_page_offset=median_offset,
@@ -653,19 +705,190 @@ def get_index(
 # ---------------------------------------------------------------------------
 # Retrieval helpers
 # ---------------------------------------------------------------------------
+CANONICAL_MATH_TERMS = [
+    "characteristic", "equation", "matrices", "matrix", "eigenvalues", "eigenvalue",
+    "eigenvectors", "eigenvector", "sampling", "distribution", "distributions",
+    "hypotheses", "hypothesis", "testing", "probability", "statistics", "cayley",
+    "hamilton", "diagonalization", "orthogonal", "transformation", "poisson",
+    "binomial", "normal", "continuous", "discrete", "random", "variable", "variables",
+    "standard", "error", "variance", "correlation", "regression", "estimation",
+    "inference", "markov", "chain", "chains", "fourier", "series", "integral",
+    "laplace", "transform", "transforms", "differential"
+]
+
+
+def _correct_query_spelling(q: str) -> str:
+    import difflib
+    words = q.lower().split()
+    corrected = []
+    for w in words:
+        clean_w = re.sub(r"[^a-z0-9]", "", w)
+        if len(clean_w) > 4:
+            matches = difflib.get_close_matches(clean_w, CANONICAL_MATH_TERMS, n=1, cutoff=0.72)
+            if matches:
+                corrected.append(matches[0])
+                continue
+        corrected.append(w)
+    return " ".join(corrected)
+
+
 def _normalize_query(q: str) -> str:
-    """Fuse common multi-word forms so "eigen values" ≈ "eigenvalues"."""
+    """Fuse common multi-word forms and normalize technical terms."""
     if not q:
         return ""
-    s = q.strip().lower()
+    q_fixed = _correct_query_spelling(q)
+    s = q_fixed.strip().lower()
+    s = re.sub(r"[\-_–—]+", " ", s)
+    s = re.sub(r"\bis(ation|ed|ing|e\b)", r"iz\1", s)
     for spaced, fused in (
         ("eigen values", "eigenvalues"),
         ("eigen value", "eigenvalue"),
         ("eigen vectors", "eigenvectors"),
         ("eigen vector", "eigenvector"),
+        ("cayley hamilton", "cayley-hamilton"),
     ):
         s = s.replace(spaced, fused)
-    return s
+    return re.sub(r"\s+", " ", s).strip()
+
+
+GENERIC_STOP_WORDS = {
+    "a", "an", "the", "and", "or", "of", "in", "on", "at", "to", "for", "with", "by", "from",
+    "as", "into", "through", "during", "including", "until", "against", "among", "throughout",
+    "chapter", "section", "part", "unit", "theory", "method", "methods", "introduction",
+    "properties", "concept", "concepts", "definition", "definitions", "theorem", "theorems",
+    "rule", "rules", "law", "laws", "problems", "problem", "exercise", "exercises", "example", "examples",
+    "study", "overview", "analysis", "applications", "application", "basic", "basics"
+}
+
+
+def _get_concept_stems(q: str) -> List[str]:
+    q_fixed = _correct_query_spelling(q)
+    s = q_fixed.strip().lower()
+    s = re.sub(r"[\-_–—]+", " ", s)
+    words = [w for w in re.findall(r"[a-z0-9]+", s) if len(w) > 2 and w not in GENERIC_STOP_WORDS]
+    stems = []
+    for w in words:
+        if w.startswith("eigen"):
+            stems.append("eigen")
+        elif "diagon" in w:
+            stems.append("diagonali")
+        elif "cayley" in w:
+            stems.append("cayley")
+        elif "hamilton" in w:
+            stems.append("hamilton")
+        elif w.endswith(("ies", "ses")):
+            stems.append(w[:-3])
+        elif w.endswith(("ing", "ed", "es")):
+            stems.append(w[:-2])
+        elif w.endswith("s") and len(w) > 3:
+            stems.append(w[:-1])
+        else:
+            stems.append(w)
+    out = []
+    for st in stems:
+        if st not in out:
+            out.append(st)
+    return out
+
+
+def _get_distinctive_tokens(q: str) -> List[str]:
+    return _get_concept_stems(q)
+
+
+def _is_front_matter_chunk(c: Chunk) -> bool:
+    if getattr(c, "is_front_matter", False):
+        return True
+    if c.page <= 25:
+        txt_low = (c.text or "").lower()[:500]
+        h_low = (c.heading or "").lower()
+        if any(fm in txt_low for fm in ["contents", "table of contents", "preface", "all rights reserved", "isbn", "published by"]):
+            return True
+        if any(fm in h_low for fm in ["contents", "preface"]):
+            return True
+    return False
+
+
+def _extract_sentence_evidence(text: str, topic: str) -> str:
+    stems = _get_concept_stems(topic)
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    best_sent = ""
+    best_cnt = 0
+    for s in sentences:
+        s_clean = s.strip().replace("\n", " ")
+        if len(s_clean) < 20 or len(s_clean) > 350:
+            continue
+        s_norm = _normalize_query(s_clean)
+        cnt = sum(1 for st in stems if st in s_norm)
+        if cnt > best_cnt:
+            best_cnt = cnt
+            best_sent = s_clean
+    if best_sent:
+        return best_sent
+    clean_all = " ".join(text.split())
+    return clean_all[:220] + "..." if len(clean_all) > 220 else clean_all
+
+
+def _verify_page_content(
+    text: str,
+    heading: Optional[str],
+    page_headings: List[str],
+    topic: str
+) -> Tuple[bool, float, str]:
+    stems = _get_concept_stems(topic)
+    if not stems:
+        return False, 0.0, ""
+
+    text_norm = _normalize_query(text)
+    all_hdgs = [heading or ""] + page_headings
+    hdgs_norm = " ".join([_normalize_query(h) for h in all_hdgs if h])
+
+    hdg_matches = sum(1 for st in stems if st in hdgs_norm)
+    txt_matches = sum(1 for st in stems if st in text_norm)
+
+    # 1. Check if exact contiguous phrase appears in headings or body text
+    t_clean = re.sub(r"[\-_–—]+", " ", topic.lower().strip())
+    pattern = re.escape(t_clean)
+    pattern = pattern.replace(r"\ distribution", r"\s+distributions?")
+    pattern = pattern.replace(r"\ equation", r"\s+equations?")
+    pattern = pattern.replace(r"\ eigenvalue", r"\s+eigenvalues?")
+    pattern = pattern.replace(r"\ matrix", r"\s+(?:matrix|matrices)")
+
+    if re.search(r"\b" + pattern + r"\b", hdgs_norm):
+        passage = _extract_sentence_evidence(text, topic)
+        return True, 0.98, passage
+
+    if re.search(r"\b" + pattern + r"\b", text_norm):
+        passage = _extract_sentence_evidence(text, topic)
+        return True, 0.94, passage
+
+    # 2. For multi-word topics (e.g. 2 or more distinctive stems), require that all stems
+    # appear together within a tight word window (<= 3 words) in at least ONE single sentence
+    if len(stems) >= 2:
+        sentences = re.split(r"(?<=[.!?])\s+|\n{2,}", text)
+        for s in sentences:
+            s_clean = s.strip()
+            if len(s_clean) < 15:
+                continue
+            s_words = re.findall(r"[a-z0-9]+", s_clean.lower())
+            idx_map = {}
+            for i, w in enumerate(s_words):
+                for st in stems:
+                    if w.startswith(st) or st in w:
+                        if st not in idx_map:
+                            idx_map[st] = []
+                        idx_map[st].append(i)
+            if len(idx_map) == len(stems):
+                min_dist = min(abs(i1 - i2) for i1 in idx_map[stems[0]] for i2 in idx_map[stems[1]])
+                if min_dist <= 3:
+                    return True, 0.88, s_clean
+        return False, 0.0, ""
+
+    # 3. Single distinctive stem (len(stems) == 1)
+    if len(stems) == 1 and (hdg_matches == 1 or txt_matches == 1):
+        passage = _extract_sentence_evidence(text, topic)
+        return True, 0.84, passage
+
+    return False, 0.0, ""
 
 
 def _expand_tokens(query: str) -> List[str]:
@@ -709,11 +932,9 @@ def _semantic_scores(index: BookIndex, query: str, n: int) -> np.ndarray:
 
 
 def _heading_match_scores(index: BookIndex, query: str, n: int) -> np.ndarray:
-    """
-    Direct lexical match between the query and headings, including all headings
-    on the chunk's page from headings_by_page and toc_entries.
-    """
-    q_tokens = set(_expand_tokens(query.lower()))
+    q_tokens = set(_get_distinctive_tokens(query))
+    if not q_tokens:
+        q_tokens = set(_expand_tokens(query.lower()))
     if not q_tokens:
         return np.zeros(n, dtype="float32")
 
@@ -764,8 +985,10 @@ def _match_toc(index: BookIndex, query: str) -> Optional[Tuple[Dict[str, Any], f
         return None
 
     q_norm = _normalize_query(query)
-    q_tokens = set(re.findall(r"[a-z0-9]+", q_norm))
-    if not q_tokens:
+    distinctive_q = set(_get_distinctive_tokens(query))
+    if not distinctive_q:
+        distinctive_q = set(re.findall(r"[a-z0-9]+", q_norm))
+    if not distinctive_q:
         return None
 
     best_entry = None
@@ -774,8 +997,22 @@ def _match_toc(index: BookIndex, query: str) -> Optional[Tuple[Dict[str, Any], f
     for entry in index.toc_entries:
         title = entry["title"]
         t_norm = _normalize_query(title)
-        t_tokens = set(re.findall(r"[a-z0-9]+", t_norm))
+        t_tokens = set(_get_distinctive_tokens(title))
         if not t_tokens:
+            t_tokens = set(re.findall(r"[a-z0-9]+", t_norm))
+        if not t_tokens:
+            continue
+
+        distinctive_overlap = distinctive_q & t_tokens
+        if not distinctive_overlap:
+            continue
+
+        overlap_ratio = len(distinctive_overlap) / len(distinctive_q)
+        # If multi-token query (e.g. 'Characteristic equation' or 'Sampling distribution'),
+        # NEVER accept a partial 1-word match like 'The equation of a circle'
+        if len(distinctive_q) >= 2 and overlap_ratio < 0.80:
+            continue
+        if len(distinctive_q) == 1 and len(distinctive_overlap) == 0:
             continue
 
         score = 0.0
@@ -787,17 +1024,15 @@ def _match_toc(index: BookIndex, query: str) -> Optional[Tuple[Dict[str, Any], f
         elif t_norm in q_norm:
             score = 1.3
         else:
-            overlap = len(q_tokens & t_tokens)
-            if overlap > 0:
-                score = (overlap / len(q_tokens))
-                if entry["level"] >= 2:
-                    score += 0.25
+            score = overlap_ratio
+            if entry.get("level", 1) >= 2:
+                score += 0.25
 
         if score > best_score:
             best_score = score
             best_entry = entry
 
-    if best_entry and best_score >= 0.65:
+    if best_entry and best_score >= 0.70:
         return best_entry, min(1.0, round(best_score if best_score <= 1.0 else 0.98, 4))
 
     return None
@@ -904,9 +1139,42 @@ def _extract_related_and_subtopics(
     return subtopics, related_topics
 
 
+_RH_EVEN = re.compile(r"^\s*(\d{1,4})\s+([A-Za-z\s,\-–—\(\)\.\/]{3,})\s*$")
+_RH_ODD = re.compile(r"^\s*([A-Za-z\s,\-–—\(\)\.\/]{3,})\s+(\d{1,4})\s*$")
+
+
+def _is_running_header(h: Optional[str]) -> bool:
+    if not h:
+        return False
+    s = h.strip()
+    return bool(_RH_EVEN.match(s) or _RH_ODD.match(s))
+
+
+def _is_math_noise_heading(h: Optional[str]) -> bool:
+    if not h:
+        return False
+    if any(ch in h for ch in ["=", "~", ">", "<", "{", "}", "\\", "[", "]"]):
+        return True
+    if re.search(r"\b(?:ad|be|at\+b|hereN)\b", h):
+        return True
+    return False
+
+
+def _extract_chapter_from_header(h: Optional[str]) -> Optional[str]:
+    if not h:
+        return None
+    m = _RH_ODD.match(h.strip())
+    if m:
+        c = m.group(1).strip()
+        if not any(w in c.lower() for w in ["probability, statistics", "higher engineering", "advanced engineering"]):
+            return c
+    return None
+
+
 def _find_section_bounds(
     index: BookIndex,
     top_chunk: Chunk,
+    topic: str = "",
     max_walk_back: int = 25,
     max_walk_fwd: int = 50,
 ) -> Tuple[int, int, Optional[str], Optional[str], Optional[str], List[str], List[str]]:
@@ -920,16 +1188,62 @@ def _find_section_bounds(
     matched_level: int = 2
     start_chunk_idx: int = idx
 
-    # 1. Walk backward to nearest heading
+    # Check running headers from top chunk or nearby chunks to grab chapter title
+    for k in range(max(0, idx - 10), min(len(chunks), idx + 10)):
+        chk = chunks[k]
+        if chk.heading:
+            ch_cand = _extract_chapter_from_header(chk.heading)
+            if ch_cand and not chapter_title:
+                chapter_title = ch_cand
+        for line in chk.text.splitlines()[:3]:
+            ch_cand = _extract_chapter_from_header(line)
+            if ch_cand and not chapter_title:
+                chapter_title = ch_cand
+
+    # 1. First, check if any chunk on top_chunk.page or nearby pages
+    # contains an exact standalone title line matching the topic (e.g. "Sampling Distribution")
+    topic_stems = _get_concept_stems(topic) if topic else []
+    found_exact_line_heading = None
+    found_line_page = None
+
+    if topic_stems:
+        search_start_cid = max(0, idx - 15)
+        search_end_cid = min(len(chunks), idx + 5)
+        best_line_score = 0
+        for c in chunks[search_start_cid:search_end_cid]:
+            for line in c.text.splitlines():
+                s = line.strip()
+                if 4 <= len(s) <= 65 and not s.endswith((".", ",", ";", ":", "-", "—")):
+                    if _is_running_header(s):
+                        continue
+                    s_stems = _get_concept_stems(s)
+                    if not s_stems:
+                        continue
+                    overlap = sum(1 for st in topic_stems if st in s_stems)
+                    if overlap == len(topic_stems) and len(topic_stems) >= 1:
+                        score = overlap / len(s_stems) if len(s_stems) else 0
+                        if score > best_line_score:
+                            best_line_score = score
+                            found_exact_line_heading = s
+                            found_line_page = c.page
+                            start_chunk_idx = c.chunk_id
+
+    # 2. Walk backward to nearest non-running-header heading (max 4 pages)
     i = idx
     steps = 0
+    candidate_subheadings = []
+
     while i >= 0 and steps < max_walk_back:
         c = chunks[i]
-        if c.heading:
-            if c.heading_level >= 2 and section_title is None:
-                section_title = c.heading
-                matched_level = c.heading_level
-                start_chunk_idx = i
+        if top_chunk.page - c.page > 4:
+            break
+        if c.heading and not _is_running_header(c.heading) and not _is_math_noise_heading(c.heading):
+            if c.heading_level >= 2:
+                if section_title is None:
+                    section_title = c.heading
+                    matched_level = c.heading_level
+                    start_chunk_idx = i
+                candidate_subheadings.append((c.chunk_id, c.page, c.heading_level, c.heading))
             elif c.heading_level == 1:
                 chapter_title = c.heading
                 if section_title is None:
@@ -940,57 +1254,168 @@ def _find_section_bounds(
         i -= 1
         steps += 1
 
+    # Check for hierarchical parent section (e.g., if 1.6.4 Corollary was found, find 1.6)
+    if section_title:
+        m_num = re.search(r"^(\d+\.\d+)(?:\.\d+)+", section_title)
+        if m_num:
+            major_pfx = m_num.group(1)  # e.g. "1.6"
+            # Walk back further to find the major section heading (e.g. "1.6 EIGENVALUES AND EIGENVECTORS")
+            for cand_id, cand_p, cand_lvl, cand_h in candidate_subheadings:
+                if re.match(r"^" + re.escape(major_pfx) + r"\s+[A-Za-z]", cand_h):
+                    section_title = cand_h
+                    matched_level = cand_lvl
+                    start_chunk_idx = cand_id
+                    break
+            # Or scan headings_by_page for the major section heading
+            for p in range(max(1, chunks[start_chunk_idx].page - 15), chunks[start_chunk_idx].page + 1):
+                for lvl, h in index.headings_by_page.get(p, []):
+                    if re.match(r"^" + re.escape(major_pfx) + r"\s+[A-Za-z]", h):
+                        section_title = h
+                        matched_level = lvl
+                        for chk_i in range(max(0, start_chunk_idx - 30), start_chunk_idx + 1):
+                            if chunks[chk_i].page == p:
+                                start_chunk_idx = chk_i
+                                break
+                        break
+
+    # Prioritize exact standalone topic heading found nearby over random/noise headings
+    if found_exact_line_heading and not any(eq in found_exact_line_heading for eq in ["=", " is ", " are "]):
+        if not section_title or _is_running_header(section_title) or _is_math_noise_heading(section_title) or (abs(top_chunk.page - (found_line_page or top_chunk.page)) <= 1):
+            section_title = found_exact_line_heading
+
     # Check if a TOC entry matches this page
     matched_toc = None
     for entry in index.toc_entries:
-        if entry["page"] <= top_chunk.page <= entry["end_page"] and entry["level"] >= 2:
+        if entry["page"] <= top_chunk.page <= entry["end_page"] and entry.get("level", 1) >= 2:
             matched_toc = entry
             break
 
     if matched_toc:
-        chapter_title = matched_toc["chapter"]
+        if not chapter_title:
+            chapter_title = matched_toc["chapter"]
         if not section_title:
             section_title = matched_toc["title"]
 
     start_page = chunks[start_chunk_idx].page if start_chunk_idx >= 0 else top_chunk.page
+    if found_line_page and found_line_page < start_page:
+        start_page = found_line_page
 
-    # Extract numerical prefix from section title (e.g., "12.4" from "12.4 Eigenvalues and Eigenvectors")
+    # Extract numerical prefix from section title (e.g., "1.6" from "1.6 EIGENVALUES AND EIGENVECTORS")
     sec_num_match = re.search(r"(\d+(?:\.\d+)*)", section_title or "")
     sec_num = sec_num_match.group(1) if sec_num_match else None
 
-    # 2. Walk forward to next major heading / next section
+    # 3. Walk forward to next major heading / next section
     end_page = top_chunk.page
     next_section_title: Optional[str] = None
     j = max(idx, start_chunk_idx) + 1
-    fwd_steps = 0
     found_next = False
 
-    while j < len(chunks) and fwd_steps < max_walk_fwd:
-        c = chunks[j]
-        if c.heading and c.heading != section_title and c.heading != chapter_title:
-            is_next = False
-            next_num_match = re.search(r"(\d+(?:\.\d+)*)", c.heading)
-            if sec_num and next_num_match:
-                next_num = next_num_match.group(1)
-                if next_num != sec_num:
+    # 3a. For unnumbered sections (sec_num is None), scan forward chunks for stand-alone section headings
+    if not sec_num:
+        for k in range(j, min(j + 30, len(chunks))):
+            fc = chunks[k]
+            if fc.page >= start_page + 2 and fc.page <= start_page + 6:
+                for line in fc.text.splitlines():
+                    line_s = line.strip()
+                    if (
+                        len(line_s) >= 4
+                        and len(line_s) <= 60
+                        and not _is_running_header(line_s)
+                        and not _is_math_noise_heading(line_s)
+                        and not any(line_s.endswith(punc) for punc in [".", ",", ";", ":", "=", "+", "-"])
+                        and not any(eq in line_s for eq in ["=", "<", ">", "{", "}", "(", ")"])
+                    ):
+                        words = [w for w in line_s.split() if w.lower() not in {"and", "or", "of", "in", "on", "for", "the", "a", "an", "to"}]
+                        if words and (line_s.isupper() or sum(1 for w in words if w[0].isupper()) >= len(words) * 0.7):
+                            if line_s.lower() != (section_title or "").lower() and line_s.lower() != (chapter_title or "").lower():
+                                if any(kw in line_s.lower() for kw in [
+                                    "procedure for", "procedure of", "critical values", "tests of significance",
+                                    "large sample", "small sample", "test 1", "test 2", "test 3"
+                                ]):
+                                    next_section_title = line_s
+                                    end_page = max(start_page, fc.page - 1)
+                                    found_next = True
+                                    break
+                if found_next:
+                    break
+
+    # 3b. Scan chunks forward
+    if not found_next:
+        fwd_steps = 0
+        while j < len(chunks) and fwd_steps < max_walk_fwd:
+            c = chunks[j]
+            if (
+                c.heading
+                and not _is_running_header(c.heading)
+                and not _is_math_noise_heading(c.heading)
+                and c.heading != section_title
+                and c.heading != chapter_title
+            ):
+                is_next = False
+                next_num_match = re.search(r"(\d+(?:\.\d+)*)", c.heading)
+                if sec_num and next_num_match:
+                    next_num = next_num_match.group(1)
+                    if sec_num.count(".") == 1:
+                        if next_num != sec_num and not next_num.startswith(sec_num + "."):
+                            is_next = True
+                    else:
+                        if next_num != sec_num:
+                            is_next = True
+                elif not sec_num and c.heading_level <= matched_level:
+                    if c.page - start_page <= 5:
+                        is_next = True
+                elif sec_num and c.heading_level <= matched_level and (c.page - start_page <= 25):
                     is_next = True
-            elif c.heading_level <= matched_level:
-                is_next = True
 
-            if is_next:
-                next_section_title = c.heading
-                end_page = max(start_page, c.page - 1 if c.page > start_page else c.page)
-                found_next = True
-                break
-        j += 1
-        fwd_steps += 1
+                if is_next:
+                    next_section_title = c.heading
+                    end_page = max(start_page, c.page - 1 if c.page > start_page else c.page)
+                    found_next = True
+                    break
+            j += 1
+            fwd_steps += 1
 
-    # If end_page == start_page, expand to cover subsequent problem pages in this chapter
-    if not found_next or end_page == start_page:
-        if matched_toc and matched_toc["end_page"] > start_page:
+    # 3c. If no next section was found in chunks, try forward headings_by_page
+    if not found_next:
+        if matched_toc and matched_toc.get("level", 1) >= 2 and matched_toc["end_page"] > start_page:
             end_page = matched_toc["end_page"]
         else:
-            end_page = min(start_page + 3, chunks[-1].page)
+            found_fwd = False
+            for p in range(start_page + 1, min(start_page + 30, index.total_pages + 1)):
+                hdgs = index.headings_by_page.get(p, [])
+                for lvl, h in hdgs:
+                    if _is_running_header(h) or _is_math_noise_heading(h):
+                        continue
+                    m_num = re.search(r"(\d+(?:\.\d+)*)", h)
+                    if sec_num and m_num:
+                        next_num = m_num.group(1)
+                        if sec_num.count(".") == 1:
+                            if next_num != sec_num and not next_num.startswith(sec_num + "."):
+                                end_page = max(start_page, p - 1)
+                                next_section_title = h
+                                found_fwd = True
+                                break
+                        elif next_num != sec_num:
+                            end_page = max(start_page, p - 1)
+                            next_section_title = h
+                            found_fwd = True
+                            break
+                    elif any(h.lower().startswith(pfx) for pfx in ["chapter", "part", "unit"]):
+                        if not sec_num:
+                            end_page = min(start_page + 3, p - 1)
+                        else:
+                            end_page = max(start_page, p - 1)
+                        next_section_title = h
+                        found_fwd = True
+                        break
+                if found_fwd:
+                    break
+            if not found_fwd:
+                end_page = min(start_page + 3, chunks[-1].page)
+
+    # 3d. Enforce tight bounds on unnumbered sections so they don't sprawl
+    if not sec_num and end_page > start_page + 4:
+        end_page = min(start_page + 3, chunks[-1].page)
 
     if end_page < start_page:
         end_page = start_page
@@ -1010,6 +1435,7 @@ def locate_topic(index: BookIndex, topic: str, top_k: int = 8) -> Dict:
     if n == 0:
         return {"found": False, "reason": "empty_index"}
 
+    topic = _correct_query_spelling(topic)
     normalized = _normalize_query(topic)
 
     # --- STAGE 1: Check High-Precision Table of Contents Match ---
@@ -1021,77 +1447,95 @@ def locate_topic(index: BookIndex, topic: str, top_k: int = 8) -> Dict:
         sec = toc_entry["title"]
         next_sec = toc_entry["next_section"]
 
-        # Determine accurate end page
-        # If section end page equals start page, expand across the chapter's problems so user gets full worked topic!
-        end_p = toc_entry["end_page"]
-        if end_p == start_p:
-            chap_end = start_p
-            for e in index.toc_entries:
-                if e["chapter"] == chap and e["end_page"] > chap_end:
-                    chap_end = e["end_page"]
-            end_p = max(start_p, min(start_p + 4, chap_end))
+        # Ensure TOC entry points to body content, not front matter
+        is_front_toc = (start_p <= 12 and any(entry["page"] > 12 for entry in index.toc_entries))
+        if not is_front_toc:
+            toc_passage = ""
+            for c in index.chunks:
+                if c.page == start_p and c.text:
+                    toc_passage = _extract_sentence_evidence(c.text, topic)
+                    if toc_passage:
+                        break
+            if not toc_passage:
+                toc_passage = f"Section '{sec}' under chapter '{chap}' in prescribed reference text."
 
-        printed_start = index.get_printed_page(start_p)
-        printed_end = index.get_printed_page(end_p)
+            end_p = toc_entry["end_page"]
+            if end_p == start_p or (toc_entry.get("level", 1) <= 1):
+                chap_end = start_p
+                for e in index.toc_entries:
+                    if e["chapter"] == chap and e["end_page"] > chap_end and e.get("level", 1) >= 2:
+                        chap_end = e["end_page"]
+                end_p = max(start_p, min(start_p + 3, chap_end))
 
-        subtopics, related_topics = _extract_related_and_subtopics(
-            index, start_p, end_p, sec, chap
-        )
+            printed_start = index.get_printed_label(start_p)
+            printed_end = index.get_printed_label(end_p)
+            try:
+                if int(printed_end) < int(printed_start):
+                    printed_start = str(start_p)
+                    printed_end = str(end_p)
+            except (ValueError, TypeError):
+                pass
 
-        page_display = (
-            f"Page {printed_start} – {printed_end} (PDF {start_p} – {end_p})"
-            if printed_start != printed_end
-            else f"Page {printed_start} (PDF {start_p})"
-        )
+            subtopics, related_topics = _extract_related_and_subtopics(
+                index, start_p, end_p, sec, chap
+            )
 
-        cand_pages = [p for p in range(start_p, min(start_p + 8, end_p + 1))]
-        candidate_pages_detail = [
-            {
-                "page": p,
-                "similarity": round(toc_score, 2) if p == start_p else round(toc_score * 0.9, 2),
-                "is_top": (p == start_p),
-            }
-            for p in cand_pages
-        ]
+            page_display = (
+                f"Page {printed_start} – {printed_end} (PDF {start_p} – {end_p})"
+                if printed_start != printed_end
+                else f"Page {printed_start} (PDF {start_p})"
+            )
 
-        return {
-            "found": True,
-            "start_page": start_p,
-            "end_page": end_p,
-            "printed_start_page": printed_start,
-            "printed_end_page": printed_end,
-            "page_display": page_display,
-            "section_title": sec,
-            "chapter_title": chap,
-            "next_section_title": next_sec,
-            "subtopics": subtopics,
-            "related_topics": related_topics,
-            "match_confidence": round(toc_score, 4),
-            "candidate_pages": cand_pages,
-            "candidate_pages_detail": candidate_pages_detail,
-            "section_boundary": {
-                "start_heading": sec,
+            cand_pages = [p for p in range(start_p, min(start_p + 8, end_p + 1))]
+            candidate_pages_detail = [
+                {
+                    "page": p,
+                    "similarity": round(toc_score, 2) if p == start_p else round(toc_score * 0.9, 2),
+                    "is_top": (p == start_p),
+                }
+                for p in cand_pages
+            ]
+
+            return {
+                "found": True,
+                "verified": True,
                 "start_page": start_p,
                 "end_page": end_p,
                 "printed_start_page": printed_start,
                 "printed_end_page": printed_end,
-                "next_heading": next_sec,
+                "page_display": page_display,
+                "section_title": sec,
+                "chapter_title": chap,
+                "next_section_title": next_sec,
+                "supporting_passage": toc_passage,
                 "subtopics": subtopics,
                 "related_topics": related_topics,
-                "chapter": chap,
-            },
-            "pdf_type": getattr(index, "pdf_type", "Text PDF"),
-            "extraction_method": getattr(index, "extraction_method", "PyMuPDF"),
-            "top_chunks": [
-                {
-                    "chunk_id": c.chunk_id,
-                    "page": c.page,
-                    "similarity": round(toc_score, 4),
-                    "preview": c.text[:200],
-                }
-                for c in index.chunks if c.page == start_p
-            ][:top_k],
-        }
+                "match_confidence": round(toc_score, 4),
+                "candidate_pages": cand_pages,
+                "candidate_pages_detail": candidate_pages_detail,
+                "section_boundary": {
+                    "start_heading": sec,
+                    "start_page": start_p,
+                    "end_page": end_p,
+                    "printed_start_page": printed_start,
+                    "printed_end_page": printed_end,
+                    "next_heading": next_sec,
+                    "subtopics": subtopics,
+                    "related_topics": related_topics,
+                    "chapter": chap,
+                },
+                "pdf_type": getattr(index, "pdf_type", "Text PDF"),
+                "extraction_method": getattr(index, "extraction_method", "PyMuPDF"),
+                "top_chunks": [
+                    {
+                        "chunk_id": c.chunk_id,
+                        "page": c.page,
+                        "similarity": round(toc_score, 4),
+                        "preview": c.text[:200],
+                    }
+                    for c in index.chunks if c.page == start_p
+                ][:top_k],
+            }
 
     # --- STAGE 2: Hybrid RAG Search (FAISS + BM25 + Heading Boost) ---
     kw = _keyword_scores(index.bm25, normalized, n)
@@ -1099,18 +1543,68 @@ def locate_topic(index: BookIndex, topic: str, top_k: int = 8) -> Dict:
     head = _heading_match_scores(index, normalized, n)
     merged = _merge_scores(kw, sem, head)
 
-    order = np.argsort(-merged)[:top_k]
+    order = np.argsort(-merged)
     if len(order) == 0 or merged[order[0]] <= 0:
         return {
             "found": False,
-            "reason": "no_matching_content",
+            "reason": "topic_not_found_in_book",
             "candidate_pages": [],
             "candidate_pages_detail": [],
             "top_chunks": [],
+            "pdf_type": getattr(index, "pdf_type", "Text PDF"),
+            "extraction_method": getattr(index, "extraction_method", "PyMuPDF"),
         }
 
-    top_chunk = index.chunks[int(order[0])]
-    top_score = float(merged[order[0]])
+    # Strict Page-Level Verification Gate
+    verified_chunk = None
+    verified_passage = ""
+    verified_conf = 0.0
+
+    for idx_i in order[:min(35, len(order))]:
+        cand_c = index.chunks[int(idx_i)]
+        if _is_front_matter_chunk(cand_c):
+            continue
+        page_hdgs = [h for _, h in index.headings_by_page.get(cand_c.page, [])]
+        is_valid, conf_val, passage = _verify_page_content(
+            cand_c.text, cand_c.heading, page_hdgs, topic
+        )
+        if is_valid:
+            verified_chunk = cand_c
+            verified_passage = passage
+            sim_score = float(merged[int(idx_i)])
+            verified_conf = min(0.98, max(0.80, (conf_val * 0.7) + (sim_score * 0.3)))
+            break
+
+    if verified_chunk is None:
+        return {
+            "found": False,
+            "reason": "topic_not_found_in_book",
+            "candidate_pages": [],
+            "candidate_pages_detail": [],
+            "top_chunks": [],
+            "pdf_type": getattr(index, "pdf_type", "Text PDF"),
+            "extraction_method": getattr(index, "extraction_method", "PyMuPDF"),
+        }
+
+    top_chunk = verified_chunk
+    start_page, end_page, section, chapter, next_section, subtopics, related_topics = _find_section_bounds(
+        index, top_chunk, topic=topic
+    )
+
+    printed_start = index.get_printed_label(start_page)
+    printed_end = index.get_printed_label(end_page)
+    try:
+        if int(printed_end) < int(printed_start):
+            printed_start = str(start_page)
+            printed_end = str(end_page)
+    except (ValueError, TypeError):
+        pass
+
+    page_display = (
+        f"Page {printed_start} – {printed_end} (PDF {start_page} – {end_page})"
+        if printed_start != printed_end
+        else f"Page {printed_start} (PDF {start_page})"
+    )
 
     page_score_map: Dict[int, float] = {}
     for i in order[:min(top_k * 2, len(order))]:
@@ -1131,40 +1625,9 @@ def locate_topic(index: BookIndex, topic: str, top_k: int = 8) -> Dict:
         for p in sorted_pages
     ]
 
-    if top_score < 0.05:
-        return {
-            "found": False,
-            "reason": "low_confidence",
-            "best_score": top_score,
-            "candidate_pages": sorted_pages,
-            "candidate_pages_detail": candidate_pages_detail,
-            "top_chunks": [
-                {
-                    "chunk_id": int(i),
-                    "page": index.chunks[int(i)].page,
-                    "similarity": round(float(merged[int(i)]), 4),
-                    "preview": index.chunks[int(i)].text[:200],
-                }
-                for i in order[:top_k]
-            ],
-            "pdf_type": getattr(index, "pdf_type", "Text PDF"),
-            "extraction_method": getattr(index, "extraction_method", "PyMuPDF"),
-        }
-
-    start_page, end_page, section, chapter, next_section, subtopics, related_topics = _find_section_bounds(
-        index, top_chunk
-    )
-
-    printed_start = index.get_printed_page(start_page)
-    printed_end = index.get_printed_page(end_page)
-    page_display = (
-        f"Page {printed_start} – {printed_end} (PDF {start_page} – {end_page})"
-        if printed_start != printed_end
-        else f"Page {printed_start} (PDF {start_page})"
-    )
-
     return {
         "found": True,
+        "verified": True,
         "start_page": start_page,
         "end_page": end_page,
         "printed_start_page": printed_start,
@@ -1173,9 +1636,10 @@ def locate_topic(index: BookIndex, topic: str, top_k: int = 8) -> Dict:
         "section_title": section,
         "chapter_title": chapter,
         "next_section_title": next_section,
+        "supporting_passage": verified_passage,
         "subtopics": subtopics,
         "related_topics": related_topics,
-        "match_confidence": round(top_score, 4),
+        "match_confidence": round(verified_conf, 4),
         "candidate_pages": sorted_pages,
         "candidate_pages_detail": candidate_pages_detail,
         "section_boundary": {

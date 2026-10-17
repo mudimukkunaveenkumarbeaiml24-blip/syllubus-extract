@@ -3,9 +3,10 @@ import json
 import logging
 import os
 from pathlib import Path
+import re
 import sys
 import uuid
-from typing import List
+from typing import List, Optional, Dict, Any
 
 logger = logging.getLogger("syllabusiq")
 logging.basicConfig(level=logging.INFO)
@@ -473,64 +474,127 @@ async def analyze_reference_books(
 # REFERENCE BOOK TOPIC LOCATOR  (Task 2)
 # =========================================================
 
+@app.get("/books")
+async def list_available_books():
+    """
+    List all reference books indexed on the server.
+    """
+    books = []
+    indexes_dir = BASE_DIR / "book_indexes"
+    if indexes_dir.exists():
+        for d in sorted(indexes_dir.iterdir()):
+            if d.is_dir():
+                meta_p = d / "meta.json"
+                if meta_p.exists():
+                    try:
+                        meta = json.loads(meta_p.read_text(encoding="utf-8"))
+                        path_p = Path(meta.get("path", ""))
+                        book_url = f"/books-static/{path_p.name}" if path_p.exists() else ""
+                        books.append({
+                            "book_id": meta.get("book_id", d.name),
+                            "file_hash": meta.get("file_hash", d.name),
+                            "filename": meta.get("filename", d.name),
+                            "total_pages": meta.get("total_pages", 0),
+                            "chunk_count": meta.get("chunk_count", 0),
+                            "pdf_type": meta.get("pdf_type", "Text PDF"),
+                            "extraction_method": meta.get("extraction_method", "PyMuPDF"),
+                            "toc_count": len(meta.get("toc_entries", meta.get("toc", []))),
+                            "book_url": book_url,
+                            "is_indexed": True,
+                        })
+                    except Exception as e:
+                        logger.warning("Error reading book meta for %s: %s", d.name, e)
+    return {"success": True, "count": len(books), "books": books}
+
+
 @app.post("/books/locate-topic")
 async def locate_topic_in_books(
-    files: List[UploadFile] = File(...),
+    files: Optional[List[UploadFile]] = File(None),
     topic: str = Form(...),
+    book_ids: Optional[str] = Form(None),
     validate_with_llm: bool = Form(True),
 ):
     """
     Locate a topic inside one or more reference books.
 
-    Returns, for each book: start page, end page, section title,
-    chapter title, match confidence, candidate pages, and a
-    `book_url` that the frontend uses to render page thumbnails.
-
-    Does NOT require document_id or a syllabus.
+    If `files` are uploaded, indexes and searches those files.
+    If `files` are omitted, searches across already-indexed reference books on the server.
     """
-    if not files:
-        raise HTTPException(status_code=400, detail="Upload at least one PDF.")
-
     if not topic or not topic.strip():
         raise HTTPException(status_code=400, detail="`topic` must not be empty.")
 
-    for f in files:
-        if not f.filename or not f.filename.lower().endswith(".pdf"):
-            raise HTTPException(
-                status_code=400,
-                detail=f"{f.filename or 'unnamed'} is not a PDF.",
-            )
-
-    # --- Save uploads ---
     BOOK_DIR = UPLOAD_DIR / "books"
     BOOK_DIR.mkdir(parents=True, exist_ok=True)
 
     saved = []
-    try:
-        for f in files:
-            book_id = uuid.uuid4().hex
-            dest = BOOK_DIR / f"{book_id}.pdf"
-            with open(dest, "wb") as out:
-                while True:
-                    chunk = await f.read(1024 * 1024)
-                    if not chunk:
-                        break
-                    out.write(chunk)
-            saved.append({
-                "book_id": book_id,
-                "filename": Path(f.filename).name,
-                "path": str(dest),
-            })
-    finally:
-        for f in files:
+    has_files = False
+    if files and isinstance(files, (list, tuple)):
+        valid_files = [f for f in files if getattr(f, "filename", None) and f.filename.strip()]
+        if valid_files:
+            has_files = True
+            for f in valid_files:
+                if not f.filename.lower().endswith(".pdf"):
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"{f.filename} is not a PDF.",
+                    )
             try:
-                await f.close()
-            except Exception:
-                pass
+                for f in valid_files:
+                    book_id = uuid.uuid4().hex
+                    dest = BOOK_DIR / f"{book_id}.pdf"
+                    with open(dest, "wb") as out:
+                        while True:
+                            chunk = await f.read(1024 * 1024)
+                            if not chunk:
+                                break
+                            out.write(chunk)
+                    saved.append({
+                        "book_id": book_id,
+                        "filename": Path(f.filename).name,
+                        "path": str(dest),
+                        "from_indexed": False,
+                    })
+            finally:
+                for f in valid_files:
+                    try:
+                        await f.close()
+                    except Exception:
+                        pass
+
+    if not has_files:
+        # Load pre-indexed books from book_indexes directory
+        target_ids = {x.strip() for x in book_ids.split(",") if x.strip()} if (book_ids and isinstance(book_ids, str)) else None
+        indexes_dir = BASE_DIR / "book_indexes"
+        if indexes_dir.exists():
+            for d in sorted(indexes_dir.iterdir()):
+                if d.is_dir():
+                    meta_p = d / "meta.json"
+                    if meta_p.exists():
+                        try:
+                            meta = json.loads(meta_p.read_text(encoding="utf-8", errors="ignore"))
+                            b_id = meta.get("book_id", d.name)
+                            f_hash = meta.get("file_hash", d.name)
+                            if target_ids and b_id not in target_ids and f_hash not in target_ids:
+                                continue
+                            saved.append({
+                                "book_id": b_id,
+                                "file_hash": f_hash,
+                                "filename": meta.get("filename", d.name),
+                                "path": meta.get("path", ""),
+                                "from_indexed": True,
+                            })
+                        except Exception as e:
+                            logger.warning("Error reading indexed book meta %s: %s", d.name, e)
+
+    if not saved:
+        raise HTTPException(
+            status_code=400,
+            detail="No reference books provided or found on server. Upload at least one textbook PDF.",
+        )
 
     # --- Locate ---
     try:
-        from app.book_index_service import get_index, locate_topic
+        from app.book_index_service import get_index, locate_topic, load_from_disk
     except Exception as exc:
         logger.exception("book_index_service unavailable")
         raise HTTPException(
@@ -541,9 +605,20 @@ async def locate_topic_in_books(
     results = []
     for b in saved:
         try:
-            index = await asyncio.to_thread(
-                get_index, b["path"], b["book_id"], b["filename"],
-            )
+            if b.get("from_indexed") and b.get("file_hash"):
+                index = await asyncio.to_thread(load_from_disk, b["file_hash"])
+                if index is None and b.get("path") and Path(b["path"]).exists():
+                    index = await asyncio.to_thread(
+                        get_index, b["path"], b["book_id"], b["filename"]
+                    )
+            else:
+                index = await asyncio.to_thread(
+                    get_index, b["path"], b["book_id"], b["filename"],
+                )
+
+            if index is None:
+                raise ValueError(f"Could not load index for {b['filename']}")
+
             located = await asyncio.to_thread(locate_topic, index, topic)
 
             if validate_with_llm and located.get("found"):
@@ -576,6 +651,20 @@ async def locate_topic_in_books(
                         match_confidence=located.get("match_confidence", 0.95),
                     )
                     located["validation"] = validation
+                    if validation.get("canonical_topic"):
+                        located["canonical_topic"] = validation["canonical_topic"]
+                    if validation.get("core_definition"):
+                        located["core_definition"] = validation["core_definition"]
+                    if validation.get("key_formulas"):
+                        located["key_formulas"] = validation["key_formulas"]
+                    if validation.get("learning_flow"):
+                        located["learning_flow"] = validation["learning_flow"]
+                    if validation.get("subtopics"):
+                        located["subtopics"] = validation["subtopics"]
+                    if validation.get("section_title") and not re.match(r"^\d{2,4}\s+", validation["section_title"]):
+                        located["section_title"] = validation["section_title"]
+                    if validation.get("chapter_title"):
+                        located["chapter_title"] = validation["chapter_title"]
                 except Exception as exc:
                     logger.warning("Validation step failed: %s", exc)
                     located["validation"] = {
@@ -618,7 +707,7 @@ async def locate_topic_in_books(
                 "total_pages": index.total_pages,
                 "pdf_type": getattr(index, "pdf_type", "Text PDF"),
                 "extraction_method": getattr(index, "extraction_method", "PyMuPDF"),
-                "book_url": f"/books-static/{Path(b['path']).name}",
+                "book_url": f"/books-static/{Path(b['path']).name}" if (b.get('path') and Path(b['path']).name) else "",
                 "result": located,
             })
 
@@ -667,43 +756,37 @@ def save_document(doc_data: dict) -> None:
 
 
 def load_document(doc_id: str) -> dict:
-
-    if doc_id in DOCUMENTS_STORE:
-        return DOCUMENTS_STORE[doc_id]
-
     out_file = OUTPUT_DIR / f"{doc_id}.json"
-
     if out_file.exists():
         try:
             with open(out_file, "r", encoding="utf-8") as f:
                 doc_data = json.load(f)
                 DOCUMENTS_STORE[doc_id] = doc_data
                 return doc_data
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to read {out_file}: {e}")
+
+    if doc_id in DOCUMENTS_STORE:
+        return DOCUMENTS_STORE[doc_id]
 
     return None
 
 
 def get_all_documents() -> list:
+    docs = []
+    for file in sorted(OUTPUT_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+        try:
+            with open(file, "r", encoding="utf-8") as f:
+                d = json.load(f)
+                if isinstance(d, dict) and "id" in d:
+                    DOCUMENTS_STORE[d["id"]] = d
+                    docs.append(d)
+        except Exception:
+            pass
 
-    docs = list(DOCUMENTS_STORE.values())
-
-    loaded_ids = {d["id"] for d in docs}
-
-    for file in OUTPUT_DIR.glob("*.json"):
-        doc_id = file.stem
-
-        if doc_id not in loaded_ids:
-            try:
-                with open(file, "r", encoding="utf-8") as f:
-                    d = json.load(f)
-
-                    if isinstance(d, dict) and "id" in d:
-                        DOCUMENTS_STORE[d["id"]] = d
-                        docs.append(d)
-            except Exception:
-                pass
+    for doc_id, doc in DOCUMENTS_STORE.items():
+        if not any(d.get("id") == doc_id for d in docs):
+            docs.append(doc)
 
     return docs
 
@@ -763,13 +846,24 @@ def extract_reference_topics_from_course(course_data: dict) -> list:
                         add_topic(topic)
                     elif isinstance(topic, dict):
                         topic_name = (
-                            topic.get("title")
+                            topic.get("text")
+                            or topic.get("title")
                             or topic.get("name")
                             or topic.get("topic")
                             or topic.get("description")
                         )
                         if topic_name:
                             add_topic(topic_name)
+                        # Extract all nested subtopics
+                        subtopics = topic.get("subtopics")
+                        if isinstance(subtopics, list):
+                            for st in subtopics:
+                                if isinstance(st, str):
+                                    add_topic(st)
+                                elif isinstance(st, dict):
+                                    st_name = st.get("text") or st.get("title") or st.get("name")
+                                    if st_name:
+                                        add_topic(st_name)
 
     for field in ["syllabus", "course_topics", "course_content", "contents"]:
         value = course_data.get(field)
@@ -932,7 +1026,16 @@ async def get_reference_topics(
         "document_id": document_id,
         "course": selected_course_name,
         "topic_count": len(topics),
-        "topics": topics
+        "topics": topics,
+        "units": selected_detail.get("units", []),
+        "course_outcomes": selected_detail.get("course_outcomes", []),
+        "programme_outcomes": selected_detail.get("programme_outcomes", []),
+        "programme_specific_outcomes": selected_detail.get("programme_specific_outcomes", []),
+        "co_po_matrix": selected_detail.get("co_po_matrix", {}),
+        "co_pso_matrix": selected_detail.get("co_pso_matrix", {}),
+        "books": selected_detail.get("books", []),
+        "textbooks": selected_detail.get("textbooks", []),
+        "references": selected_detail.get("references", []),
     }
 
 
